@@ -377,6 +377,15 @@ class CaseChecks:
     enforce_grid_state_props_split: bool = True
     enforce_assembly_purity: bool = True
 
+
+@dataclass(slots=True)
+class CaseOutput:
+    """Spatial output controls for u vector and grid coordinates."""
+
+    u_enabled: bool = False
+    u_every: int = 1
+
+
 @dataclass(slots=True)
 class CaseConfig:
     """Top-level case configuration container."""
@@ -397,6 +406,7 @@ class CaseConfig:
     nonlinear: CaseNonlinear = field(default_factory=CaseNonlinear)
     solver: CaseSolver = field(default_factory=CaseSolver)
     remap: CaseRemap = field(default_factory=CaseRemap)
+    output: CaseOutput = field(default_factory=CaseOutput)
 
     def __post_init__(self) -> None:
         if not isinstance(self.conventions, CaseConventions):
@@ -413,6 +423,8 @@ class CaseConfig:
             raise TypeError("solver must be CaseSolver (loader must build dataclass).")
         if not isinstance(self.remap, CaseRemap):
             raise TypeError("remap must be CaseRemap (loader must build dataclass).")
+        if not isinstance(self.output, CaseOutput):
+            raise TypeError("output must be CaseOutput (loader must build dataclass).")
         if self.conventions.gas_closure_species != self.species.gas_balance_species:
             raise ValueError(
                 f"gas closure species mismatch: conventions='{self.conventions.gas_closure_species}' "

@@ -45,6 +45,7 @@ from core.types import (
     CaseMesh,
     CaseMeta,
     CaseNonlinear,
+    CaseOutput,
     CasePaths,
     CasePETSc,
     CaseSolver,
@@ -425,6 +426,12 @@ def _load_case_config(cfg_path: str) -> CaseConfig:
         post_correct_fd_eps_m=float(remap_raw.get("post_correct_fd_eps_m", 1.0e-6)),
     )
 
+    output_raw = raw.get("output", {}) or {}
+    output_cfg = CaseOutput(
+        u_enabled=bool(output_raw.get("u_enabled", False)),
+        u_every=int(output_raw.get("u_every", 1)),
+    )
+
     cfg = CaseConfig(
         case=case_cfg,
         paths=paths_cfg,
@@ -441,6 +448,7 @@ def _load_case_config(cfg_path: str) -> CaseConfig:
         nonlinear=nonlinear_cfg,
         solver=solver_cfg,
         remap=remap_cfg,
+        output=output_cfg,
     )
 
     LinearSolverConfigTyped.from_cfg(cfg)
@@ -618,6 +626,64 @@ def _maybe_write_spatial(cfg: CaseConfig, grid: Grid1D, state: State, step_id: i
         logger.warning("write_step_spatial failed at step %s: %s", step_id, exc)
 
 
+# Track if mapping.json has been written (module-level)
+_MAPPING_WRITTEN = False
+
+
+def _write_mapping_once(cfg: CaseConfig, grid: Grid1D, layout) -> None:
+    """Write mapping.json once at the start of the run."""
+    global _MAPPING_WRITTEN
+    if _MAPPING_WRITTEN:
+        return
+
+    try:
+        module = _load_writers_module()
+        write_fn = getattr(module, "write_mapping_json", None)
+        if write_fn is None:
+            return
+        write_fn(cfg=cfg, grid=grid, layout=layout, run_dir=None)
+        _MAPPING_WRITTEN = True
+    except Exception as exc:  # pragma: no cover - best-effort output
+        logger.warning("write_mapping_json failed: %s", exc)
+
+
+def _maybe_write_u(cfg, grid: Grid1D, state: State, layout, step_id: int, t: float) -> None:
+    """Write u vector and grid coordinates at configured frequency."""
+    try:
+        module = _load_writers_module()
+        should_write_fn = getattr(module, "should_write_u", None)
+        if should_write_fn is None:
+            logger.debug("should_write_u function not found in writers module")
+            return
+
+        should_write = should_write_fn(cfg, step_id)
+        if not should_write:
+            logger.debug(f"Skipping u output at step {step_id} (should_write_u returned False)")
+            return
+
+        logger.debug(f"Writing u vector at step {step_id}, t={t:.6e}")
+
+        # Pack state into u vector
+        from core.layout import pack_state
+
+        u, _, _ = pack_state(state, layout)
+
+        # Write u vector
+        write_fn = getattr(module, "write_step_u", None)
+        if write_fn is None:
+            logger.warning("write_step_u function not found in writers module")
+            return
+        write_fn(cfg=cfg, step_id=step_id, t=t, u=u, grid=grid, run_dir=None)
+
+        if _is_root_rank():
+            logger.info(f"Wrote u vector snapshot at step {step_id}, t={t:.6e}")
+
+    except Exception as exc:  # pragma: no cover - best-effort output
+        logger.warning("write_step_u failed at step %s: %s", step_id, exc)
+        import traceback
+        logger.debug(traceback.format_exc())
+
+
 # -----------------------------------------------------------------------------
 # Main driver
 # -----------------------------------------------------------------------------
@@ -776,6 +842,9 @@ def run_case(
         grid = build_grid(cfg)
         layout = build_layout(cfg, grid)
 
+        # Write mapping.json once after layout is created
+        _write_mapping_once(cfg, grid, layout)
+
         state = build_initial_state_erfc(cfg, grid, gas_model, liq_model)
         props, _ = compute_props(cfg, grid, state)
         if dry_run:
@@ -846,6 +915,9 @@ def run_case(
         ended_by_radius = False
 
         _maybe_write_spatial(cfg, grid, state, step_id, t)
+
+        # Write initial u vector and grid coordinates
+        _maybe_write_u(cfg, grid, state, layout, step_id, t)
 
         while t < cfg.time.t_end:
             step_id += 1
@@ -999,6 +1071,9 @@ def run_case(
                     logger.warning("Failed to write scalars at step %s: %s", step_id, exc)
 
             _maybe_write_spatial(cfg, grid, state, step_id, t)
+
+            # Write u vector and grid coordinates (new spatial output)
+            _maybe_write_u(cfg, grid, state, layout, step_id, t)
 
             if Rd_stop is not None:
                 try:
