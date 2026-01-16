@@ -103,15 +103,19 @@ def build_u_mapping(cfg: CaseConfig, grid: Grid1D, layout: "UnknownLayout") -> d
             shape = [layout.Ng]
             name_display = "Tg"
         elif block_name == "Yg":
-            # Yg is reduced species, stored as (ig * Ns_g_eff + k_red)
-            shape = [layout.Ns_g_eff, layout.Ng]
+            # Yg is stored as (ig * Ns_g_eff + k_red)
+            # Shape reflects actual storage order: (Ng, Ns_g_eff)
+            # Post-processing should transpose to (Ns_g_eff, Ng)
+            shape = [layout.Ng, layout.Ns_g_eff]
             name_display = "Yg"
         elif block_name == "Tl":
             shape = [layout.Nl]
             name_display = "Tl"
         elif block_name == "Yl":
-            # Yl is reduced species
-            shape = [layout.Ns_l_eff, layout.Nl]
+            # Yl is stored as (il * Ns_l_eff + k_red)
+            # Shape reflects actual storage order: (Nl, Ns_l_eff)
+            # Post-processing should transpose to (Ns_l_eff, Nl)
+            shape = [layout.Nl, layout.Ns_l_eff]
             name_display = "Yl"
         elif block_name == "Ts":
             shape = [1]

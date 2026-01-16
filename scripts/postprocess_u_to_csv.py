@@ -100,6 +100,9 @@ def unpack_u(u: np.ndarray, mapping: dict) -> dict:
     Unpack u vector into fields based on mapping.
 
     Returns dict with field names as keys and arrays as values.
+
+    Note: Yg and Yl are stored as (N_spatial, N_species) in u vector,
+    but we transpose them to (N_species, N_spatial) for easier processing.
     """
     blocks = mapping["blocks"]
     meta = mapping["meta"]
@@ -120,9 +123,16 @@ def unpack_u(u: np.ndarray, mapping: dict) -> dict:
             # 1D array
             fields[name] = u_block.copy()
         elif len(shape) == 2:
-            # 2D array (species, spatial)
+            # 2D array
             # u is stored in C-order (row-major)
-            fields[name] = u_block.reshape(shape, order="C")
+            reshaped = u_block.reshape(shape, order="C")
+
+            # For Yg and Yl, the shape is (N_spatial, N_species) from storage
+            # but we want (N_species, N_spatial) for processing
+            if name in ("Yg", "Yl"):
+                fields[name] = reshaped.T  # Transpose to (N_species, N_spatial)
+            else:
+                fields[name] = reshaped
         else:
             # Fallback: keep 1D
             fields[name] = u_block.copy()
@@ -235,7 +245,14 @@ def convert_step_to_csv(
             meta["species_l_closure"],
         )
     else:
+        # If Yl is not solved, initialize with closure species = 1.0
         Yl_full = np.zeros((meta["Ns_l_full"], len(r_l)), dtype=np.float64)
+        if meta["Ns_l_full"] > 0 and len(r_l) > 0:
+            closure_species = meta["species_l_closure"]
+            species_l_full = meta["species_l_full"]
+            if closure_species in species_l_full:
+                i_closure = species_l_full.index(closure_species)
+                Yl_full[i_closure, :] = 1.0
 
     # Generate output filename
     out_filename = f"step_{step_id:06d}_time_{t:.6e}s.csv"
