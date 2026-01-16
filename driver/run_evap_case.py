@@ -45,6 +45,7 @@ from core.types import (
     CaseMesh,
     CaseMeta,
     CaseNonlinear,
+    CaseOutput,
     CasePaths,
     CasePETSc,
     CaseSolver,
@@ -425,6 +426,12 @@ def _load_case_config(cfg_path: str) -> CaseConfig:
         post_correct_fd_eps_m=float(remap_raw.get("post_correct_fd_eps_m", 1.0e-6)),
     )
 
+    output_raw = raw.get("output", {}) or {}
+    output_cfg = CaseOutput(
+        u_enabled=bool(output_raw.get("u_enabled", False)),
+        u_every=int(output_raw.get("u_every", 1)),
+    )
+
     cfg = CaseConfig(
         case=case_cfg,
         paths=paths_cfg,
@@ -441,6 +448,7 @@ def _load_case_config(cfg_path: str) -> CaseConfig:
         nonlinear=nonlinear_cfg,
         solver=solver_cfg,
         remap=remap_cfg,
+        output=output_cfg,
     )
 
     LinearSolverConfigTyped.from_cfg(cfg)
