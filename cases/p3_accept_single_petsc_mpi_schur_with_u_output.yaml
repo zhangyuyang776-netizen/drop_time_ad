@@ -1,0 +1,270 @@
+case:
+  id: p3_accept_single_petsc_mpi_schur_with_u_output
+  title: "P3 acceptance: single-component PETSc MPI with u vector spatial output"
+  version: 1
+  notes: |
+    Extended from p3_accept_single_petsc_mpi_schur.yaml with new spatial output features:
+    - Unified output directory: 3D_out/
+    - mapping.json: u vector layout description
+    - steps/*.npz: u vector + grid coordinates for each time step
+    - Post-processing: convert npz to CSV using scripts/postprocess_u_to_csv.py
+
+    Run with: mpiexec -n 4 python driver/run_evap_case.py cases/p3_accept_single_petsc_mpi_schur_with_u_output.yaml
+
+paths:
+  output_root: "3D_out"  # Unified spatial output root (NEW)
+  case_dir: "../out/p3_acceptance"  # Legacy output location
+  mechanism_dir: "../mechanism"
+  gas_mech: "mech.yaml"
+
+conventions:
+  radial_normal: "+er"
+  flux_sign: "outward_positive"
+  heat_flux_def: "q=-k*dTdr"
+  evap_sign: "mpp_positive_evaporation"
+  gas_closure_species: "N2"
+  index_source: "unknown_layout_only"
+  assembly_pure: true
+  grid_state_props_split: true
+
+physics:
+  model: "droplet_1d_spherical_noChem"
+  enable_liquid: true
+  include_chemistry: false
+
+  solve_Tg: true
+  solve_Yg: true
+  solve_Tl: true
+  solve_Yl: false
+  include_Ts: true
+  include_mpp: true
+  include_Rd: true
+  stefan_velocity: true
+  species_convection: true
+
+  interface:
+    type: "no_condensation"
+    bc_mode: "equilibrium"
+    Ts_fixed: 300.0
+    equilibrium:
+      method: "raoult_psat"
+      psat_model: "coolprop"
+      condensables_gas: ["NC12H26"]
+      coolprop:
+        backend: "HEOS"
+        fluids: ["n-Dodecane"]
+
+species:
+  gas_balance_species: "N2"
+  gas_mechanism_phase: "gas"
+
+  liq_species: ["n-Dodecane"]
+  liq_balance_species: "n-Dodecane"
+
+  liq2gas_map:
+    n-Dodecane: "NC12H26"
+  mw_kg_per_mol:
+    n-Dodecane: 0.17034
+  molar_volume_cm3_per_mol:
+    n-Dodecane: 227.51
+
+geometry:
+  a0: 1.0e-4
+  R_inf: 5.0e-3
+  N_liq: 20
+  N_gas: 100
+  mesh:
+    method: "exp_power"
+    control: "iface_dr"
+    iface_dr: 2.0e-6
+    exp_power: 2.0
+    enforce_interface_continuity: true
+    continuity_tol: 1.0e-5
+
+time:
+  t0: 0.0
+  dt: 1.0e-7
+  t_end: 1.0e-5
+  max_steps: 100
+
+discretization:
+  time_scheme: "BE"
+  theta: 1.0
+  mass_matrix: "rhoVc_p"
+
+initial:
+  T_inf: 900.0
+  P_inf: 101325.0
+  T_d0: 300.0
+  Yg: {"N2": 0.79, "O2": 0.21}
+  Yl: {"n-Dodecane": 1.0}
+  Y_seed: 1.0e-12
+  t_init_T: 1.0e-6
+  Y_vap_if0: 1.0e-6
+
+transport:
+  D_l_const: 1.0e-9
+  D_l_species: {}
+
+nonlinear:
+  enabled: true
+  backend: "petsc_mpi"
+  solver: "newton_krylov"
+  krylov_method: "lgmres"
+  inner_maxiter: 30
+  max_outer_iter: 20
+  f_rtol: 1.0e-6
+  f_atol: 1.0e-8
+  use_scaled_unknowns: true
+  use_scaled_residual: false
+  residual_scale_floor: 1.0e-12
+  verbose: false
+  log_every: 10
+
+remap:
+  post_correct_interface: true
+  post_correct_tol: 1.0e-10
+  post_correct_rtol: 1.0e-3
+  post_correct_tol_skip_abs: 1.0e-8
+  post_correct_eps_rd_rel: 1.0e-6
+  post_correct_skip_if_uncovered_zero: true
+  post_correct_improve_min: 1.0e-3
+  post_correct_max_iter: 12
+  post_correct_damping: 0.7
+  post_correct_fd_eps_T: 1.0e-3
+  post_correct_fd_eps_m: 1.0e-6
+
+solver:
+  linear:
+    backend: "petsc"
+    assembly_mode: "bridge_dense"
+    pc_type: "fieldsplit"
+    fieldsplit:
+      type: "schur"
+      scheme: "bulk_iface"
+      schur_fact_type: "lower"
+      subsolvers:
+        bulk:
+          asm_sub_pc_type: "ilu"
+        iface:
+          asm_sub_pc_type: "ilu"
+
+petsc:
+  options_prefix: "p3acc_single_"
+  snes_type: "newtonls"
+  linesearch_type: "l2"
+  jacobian_mode: "mfpc_sparse_fd"
+  fd_eps: 1.0e-8
+  snes_monitor: false
+  precond_drop_tol: 0.0
+
+  ksp_type: "gmres"
+  pc_type: "fieldsplit"
+  rtol: 1.0e-8
+  atol: 1.0e-12
+  max_it: 50
+  restart: 30
+  monitor: false
+
+io:
+  write_every: 0
+  scalars_write_every: 1
+  formats: []
+  save_grid: false
+  fields:
+    scalars:
+      [
+        "step",
+        "t",
+        "Ts",
+        "Rd",
+        "mpp",
+        "mass_balance_rd",
+        "m_drop0",
+        "m_drop",
+        "m_evap_cum",
+        "mass_closure_err",
+      ]
+    gas: []
+    liquid: []
+    interface: []
+
+# ============================================================================
+# NEW: Spatial output configuration with u vector
+# ============================================================================
+output:
+  u_enabled: true    # Enable u vector spatial output
+  u_every: 10        # Write every 10 steps (100 steps total → ~10 files)
+                     # This balances disk usage with temporal resolution
+
+  # Alternative: use u_every: 5 for finer resolution (~20 files)
+  #              or u_every: 20 for coarser resolution (~5 files)
+
+  # Note: Can override with environment variable DROPLET_WRITE_U=1
+
+# ============================================================================
+# Post-processing instructions:
+# ============================================================================
+# After running this case, outputs will be in:
+#   3D_out/case_p3_accept_single_petsc_mpi_schur_with_u_output/run_YYYYMMDD_HHMMSS_pidXXXX/
+#
+# Directory structure:
+#   mapping.json              # u vector layout description
+#   steps/
+#     step_000000_time_0.000000e+00s.npz
+#     step_000010_time_1.000000e-06s.npz
+#     step_000020_time_2.000000e-06s.npz
+#     ...
+#   run.log
+#
+# Convert npz files to CSV:
+#   RUN_DIR=$(ls -td 3D_out/case_p3_accept_single_petsc_mpi_schur_with_u_output/run_* | head -1)
+#
+#   python scripts/postprocess_u_to_csv.py \
+#       --run-dir $RUN_DIR \
+#       --stride 1
+#
+# This creates CSV files in $RUN_DIR/post_csv/ with format:
+#   phase,r,T,Y_N2,Y_O2,Y_NC12H26,Y_n-Dodecane
+#   gas,1.000100e-04,9.000000e+02,7.900000e-01,2.100000e-01,1.000000e-12,
+#   gas,1.000200e-04,8.950000e+02,7.905000e-01,2.095000e-01,5.000000e-13,
+#   ...
+#   liq,5.000000e-05,3.001000e+02,,,1.000000e+00
+#   liq,6.000000e-05,3.002000e+02,,,1.000000e+00
+#   ...
+#
+# Advanced post-processing with time filtering and stride:
+#   python scripts/postprocess_u_to_csv.py \
+#       --run-dir $RUN_DIR \
+#       --t-start 5.0e-6 \
+#       --t-end 1.0e-5 \
+#       --stride 2
+#
+# For visualization with Python:
+#   import pandas as pd
+#   import matplotlib.pyplot as plt
+#
+#   df = pd.read_csv('$RUN_DIR/post_csv/step_000050_time_5.000000e-06s.csv', comment='#')
+#   gas = df[df['phase'] == 'gas']
+#   liq = df[df['phase'] == 'liq']
+#
+#   plt.figure()
+#   plt.plot(gas['r'], gas['T'], 'r-', label='Gas')
+#   plt.plot(liq['r'], liq['T'], 'b-', label='Liquid')
+#   plt.xlabel('Radius (m)')
+#   plt.ylabel('Temperature (K)')
+#   plt.legend()
+#   plt.show()
+# ============================================================================
+
+checks:
+  enforce_sumY: true
+  sumY_tol: 1.0e-10
+  clamp_negative_Y: true
+  min_Y: 0.0
+  enforce_T_bounds: true
+  T_min: 200.0
+  T_max: 4000.0
+  enforce_unique_index: true
+  enforce_grid_state_props_split: true
+  enforce_assembly_purity: true

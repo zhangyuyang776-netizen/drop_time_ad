@@ -80,7 +80,13 @@ python driver/run_evap_case.py cases/your_case.yaml
 
 ### 3. 示例配置文件
 
-参考 `cases/example_u_output.yaml` 获取完整示例。
+参考 `cases/p3_accept_single_petsc_mpi_schur_with_u_output.yaml` 获取完整示例。
+
+这个配置基于 PETSc MPI 并行求解器，包含：
+- 动网格支持（`include_Rd: true`）
+- 非线性求解器（Newton-Krylov）
+- Fieldsplit Schur 预条件
+- 完整的空间输出配置
 
 ---
 
@@ -88,7 +94,7 @@ python driver/run_evap_case.py cases/your_case.yaml
 
 ```bash
 # 使用示例配置运行
-python driver/run_evap_case.py cases/example_u_output.yaml
+python driver/run_evap_case.py cases/p3_accept_single_petsc_mpi_schur_with_u_output.yaml
 
 # 或者使用环境变量临时启用
 DROPLET_WRITE_U=1 python driver/run_evap_case.py cases/case_001.yaml
@@ -97,7 +103,7 @@ DROPLET_WRITE_U=1 python driver/run_evap_case.py cases/case_001.yaml
 运行完成后，检查输出目录：
 
 ```bash
-ls -lh 3D_out/case_example_u_output/run_*/
+ls -lh 3D_out/case_p3_accept_single_petsc_mpi_schur_with_u_output/run_*/
 ```
 
 你应该看到：
@@ -112,7 +118,7 @@ ls -lh 3D_out/case_example_u_output/run_*/
 
 ```bash
 python scripts/postprocess_u_to_csv.py \
-    --run-dir 3D_out/case_example_u_output/run_20260116_123456_pid12345
+    --run-dir 3D_out/case_p3_accept_single_petsc_mpi_schur_with_u_output/run_20260116_123456_pid12345
 ```
 
 这将：
@@ -156,7 +162,7 @@ python scripts/postprocess_u_to_csv.py \
 
 ```bash
 python scripts/postprocess_u_to_csv.py \
-    --run-dir 3D_out/case_example_u_output/run_xxx \
+    --run-dir 3D_out/case_p3_accept_single_petsc_mpi_schur_with_u_output/run_xxx \
     --t-start 0 \
     --t-end 1.0e-4 \
     --stride 5 \
@@ -353,7 +359,7 @@ pytest tests/test_u_output_and_postprocess_smoke.py -v
 
 ```bash
 # 创建配置文件（或使用示例）
-cp cases/example_u_output.yaml cases/my_case.yaml
+cp cases/p3_accept_single_petsc_mpi_schur_with_u_output.yaml cases/my_case.yaml
 
 # 编辑配置
 vim cases/my_case.yaml
@@ -426,7 +432,7 @@ plt.show()
 - 主循环集成：`driver/run_evap_case.py`
 - 后处理脚本：`scripts/postprocess_u_to_csv.py`
 - 测试：`tests/test_u_output_and_postprocess_smoke.py`
-- 示例配置：`cases/example_u_output.yaml`
+- 示例配置：`cases/p3_accept_single_petsc_mpi_schur_with_u_output.yaml`
 
 ---
 
