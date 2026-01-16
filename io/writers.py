@@ -42,39 +42,37 @@ _RUN_DIR_CACHE: dict[int, Path] = {}
 
 def get_run_dir(cfg: CaseConfig) -> Path:
     """
-    Get the unified run directory for this execution.
+    Get the 3D_out subdirectory within the current run directory.
 
-    Returns 3D_out/case_<id>/run_<timestamp>/
+    Returns <case_dir>/3D_out where case_dir is the existing run directory
+    created by _prepare_run_dir() in the driver.
+
     Uses module-level cache to ensure same directory across entire run.
     """
     cfg_id = id(cfg)
     if cfg_id in _RUN_DIR_CACHE:
         return _RUN_DIR_CACHE[cfg_id]
 
-    # Determine output root (default to "3D_out")
-    output_root = getattr(getattr(cfg, "paths", None), "output_root", None)
-    if output_root is None or str(output_root) == "out":
-        output_root = "3D_out"
+    # Get the existing run directory from cfg.paths.case_dir
+    # This is set by _prepare_run_dir() in the driver
+    case_dir = getattr(getattr(cfg, "paths", None), "case_dir", None)
 
-    # Determine case identifier
-    case_id = getattr(getattr(cfg, "case", None), "id", "default")
-    if not case_id or case_id == "default":
-        case_id = "case_default"
+    if case_dir is None:
+        # Fallback: create a default directory
+        logger.warning("cfg.paths.case_dir not set, using default 'out' directory")
+        case_dir = Path("out")
 
-    # Generate unique run ID using timestamp
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    pid = os.getpid()
-    run_id = f"run_{timestamp}_pid{pid}"
+    case_dir = Path(case_dir)
 
-    # Build full path
-    run_dir = Path(output_root) / f"case_{case_id}" / run_id
-    run_dir.mkdir(parents=True, exist_ok=True)
+    # Create 3D_out subdirectory within the run directory
+    spatial_out_dir = case_dir / "3D_out"
+    spatial_out_dir.mkdir(parents=True, exist_ok=True)
 
     # Cache it
-    _RUN_DIR_CACHE[cfg_id] = run_dir
+    _RUN_DIR_CACHE[cfg_id] = spatial_out_dir
 
-    logger.info(f"Unified run directory: {run_dir}")
-    return run_dir
+    logger.info(f"Spatial output directory: {spatial_out_dir}")
+    return spatial_out_dir
 
 
 # ============================================================================
@@ -304,23 +302,30 @@ def should_write_u(cfg: CaseConfig, step_id: int) -> bool:
     # Check environment variable (override)
     env_enabled = os.getenv("DROPLET_WRITE_U", "0") == "1"
     if env_enabled:
+        logger.debug(f"u output enabled via DROPLET_WRITE_U env var at step {step_id}")
         return True
 
     # Check config
     output_cfg = getattr(cfg, "output", None)
     if output_cfg is None:
+        logger.debug(f"No output config found, u output disabled at step {step_id}")
         return False
 
     u_enabled = getattr(output_cfg, "u_enabled", False)
     if not u_enabled:
+        logger.debug(f"u_enabled=False, u output disabled at step {step_id}")
         return False
 
     u_every = int(getattr(output_cfg, "u_every", 1))
     if u_every <= 0:
+        logger.warning(f"u_every={u_every} <= 0, u output disabled at step {step_id}")
         return False
 
     # Check frequency
-    return (step_id % u_every) == 0
+    should_write = (step_id % u_every) == 0
+    if should_write:
+        logger.debug(f"u output enabled at step {step_id} (u_every={u_every})")
+    return should_write
 
 
 def _ensure_parent(path: Path) -> None:

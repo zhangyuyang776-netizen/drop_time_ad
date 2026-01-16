@@ -645,10 +645,15 @@ def _maybe_write_u(cfg, grid: Grid1D, state: State, layout, step_id: int, t: flo
         module = _load_writers_module()
         should_write_fn = getattr(module, "should_write_u", None)
         if should_write_fn is None:
+            logger.debug("should_write_u function not found in writers module")
             return
 
-        if not should_write_fn(cfg, step_id):
+        should_write = should_write_fn(cfg, step_id)
+        if not should_write:
+            logger.debug(f"Skipping u output at step {step_id} (should_write_u returned False)")
             return
+
+        logger.debug(f"Writing u vector at step {step_id}, t={t:.6e}")
 
         # Pack state into u vector
         from core.layout import pack_state
@@ -658,11 +663,17 @@ def _maybe_write_u(cfg, grid: Grid1D, state: State, layout, step_id: int, t: flo
         # Write u vector
         write_fn = getattr(module, "write_step_u", None)
         if write_fn is None:
+            logger.warning("write_step_u function not found in writers module")
             return
         write_fn(cfg=cfg, step_id=step_id, t=t, u=u, grid=grid, run_dir=None)
 
+        if _is_root_rank():
+            logger.info(f"Wrote u vector snapshot at step {step_id}, t={t:.6e}")
+
     except Exception as exc:  # pragma: no cover - best-effort output
         logger.warning("write_step_u failed at step %s: %s", step_id, exc)
+        import traceback
+        logger.debug(traceback.format_exc())
 
 
 # -----------------------------------------------------------------------------
@@ -896,6 +907,9 @@ def run_case(
         ended_by_radius = False
 
         _maybe_write_spatial(cfg, grid, state, step_id, t)
+
+        # Write initial u vector and grid coordinates
+        _maybe_write_u(cfg, grid, state, layout, step_id, t)
 
         while t < cfg.time.t_end:
             step_id += 1

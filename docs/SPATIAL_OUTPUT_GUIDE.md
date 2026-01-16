@@ -18,20 +18,37 @@
 运行模拟后，输出目录结构如下：
 
 ```
-3D_out/
-  case_<case_id>/
-    run_<timestamp>_pid<pid>/
-      mapping.json              # u 向量布局描述（每个运行一份）
-      steps/
-        step_000000_time_0.000000e+00s.npz
-        step_000005_time_5.000000e-06s.npz
-        step_000010_time_1.000000e-05s.npz
-        ...
-      post_csv/                 # 后处理输出（可选）
-        step_000000_time_...csv
-        step_000005_time_...csv
-        ...
-      run.log                   # 运行日志
+<output_root>/
+  <case_id>/
+    <timestamp>/
+      scalars/
+        scalars.csv           # 标量时间历史
+      config.yaml             # 运行配置副本
+      run.log                 # 运行日志
+      3D_out/                 # 空间输出目录（NEW）
+        mapping.json          # u 向量布局描述（每个运行一份）
+        steps/
+          step_000000_time_0.000000e+00s.npz
+          step_000005_time_5.000000e-06s.npz
+          step_000010_time_1.000000e-05s.npz
+          ...
+        post_csv/             # 后处理输出（可选）
+          step_000000_time_...csv
+          step_000005_time_...csv
+          ...
+```
+
+**示例**（使用 p3_accept 配置）：
+```
+../out/p3_acceptance/
+  p3_accept_single_petsc_mpi_schur_with_u_output/
+    20260116_204758/
+      scalars/
+      config.yaml
+      run.log
+      3D_out/              # 所有空间输出在这里
+        mapping.json
+        steps/
 ```
 
 ### 关键文件说明
@@ -103,7 +120,9 @@ DROPLET_WRITE_U=1 python driver/run_evap_case.py cases/case_001.yaml
 运行完成后，检查输出目录：
 
 ```bash
-ls -lh 3D_out/case_p3_accept_single_petsc_mpi_schur_with_u_output/run_*/
+# 找到最新的运行目录
+RUN_DIR=$(ls -td ../out/p3_acceptance/p3_accept_single_petsc_mpi_schur_with_u_output/*/ | head -1)
+ls -lh ${RUN_DIR}/3D_out/
 ```
 
 你应该看到：
@@ -117,15 +136,19 @@ ls -lh 3D_out/case_p3_accept_single_petsc_mpi_schur_with_u_output/run_*/
 ### 基本用法
 
 ```bash
+# 找到最新的运行目录
+RUN_DIR=$(ls -td ../out/p3_acceptance/p3_accept_single_petsc_mpi_schur_with_u_output/*/ | head -1)
+
+# 转换 npz 文件为 CSV
 python scripts/postprocess_u_to_csv.py \
-    --run-dir 3D_out/case_p3_accept_single_petsc_mpi_schur_with_u_output/run_20260116_123456_pid12345
+    --run-dir ${RUN_DIR}/3D_out
 ```
 
 这将：
 1. 读取 `mapping.json` 了解 u 向量布局
 2. 扫描 `steps/*.npz` 文件
 3. 将每个 npz 文件转换为对应的 CSV 文件
-4. 输出到 `<run-dir>/post_csv/`
+4. 输出到 `<run-dir>/3D_out/post_csv/`
 
 ### 高级选项
 
@@ -133,28 +156,28 @@ python scripts/postprocess_u_to_csv.py \
 
 ```bash
 python scripts/postprocess_u_to_csv.py \
-    --run-dir 3D_out/.../run_xxx \
-    --t-start 1.0e-5 \
-    --t-end 5.0e-5
+    --run-dir ${RUN_DIR}/3D_out \
+    --t-start 1.0e-6 \
+    --t-end 5.0e-6
 ```
 
-只处理时间在 `[1e-5, 5e-5]` 秒范围内的文件。
+只处理时间在 `[1e-6, 5e-6]` 秒范围内的文件。
 
 #### 使用 stride 减少文件数量
 
 ```bash
 python scripts/postprocess_u_to_csv.py \
-    --run-dir 3D_out/.../run_xxx \
-    --stride 10
+    --run-dir ${RUN_DIR}/3D_out \
+    --stride 2
 ```
 
-每隔 10 个文件转换一次（减少输出 CSV 数量）。
+每隔 2 个文件转换一次（减少输出 CSV 数量）。
 
 #### 自定义输出目录
 
 ```bash
 python scripts/postprocess_u_to_csv.py \
-    --run-dir 3D_out/.../run_xxx \
+    --run-dir ${RUN_DIR}/3D_out \
     --out-dir /path/to/custom/output
 ```
 
@@ -162,10 +185,10 @@ python scripts/postprocess_u_to_csv.py \
 
 ```bash
 python scripts/postprocess_u_to_csv.py \
-    --run-dir 3D_out/case_p3_accept_single_petsc_mpi_schur_with_u_output/run_xxx \
+    --run-dir ${RUN_DIR}/3D_out \
     --t-start 0 \
-    --t-end 1.0e-4 \
-    --stride 5 \
+    --t-end 1.0e-5 \
+    --stride 2 \
     --out-dir results_csv
 ```
 
@@ -372,28 +395,28 @@ python driver/run_evap_case.py cases/my_case.yaml
 
 ```bash
 # 找到运行目录
-RUN_DIR=$(ls -td 3D_out/case_my_case/run_* | head -1)
+RUN_DIR=$(ls -td ../out/*/my_case/*/ | head -1)
 echo "Run directory: $RUN_DIR"
 
 # 检查文件
-ls -lh $RUN_DIR/mapping.json
-ls -lh $RUN_DIR/steps/ | head -20
+ls -lh ${RUN_DIR}/3D_out/mapping.json
+ls -lh ${RUN_DIR}/3D_out/steps/ | head -20
 ```
 
 ### 3. 后处理
 
 ```bash
 # 转换所有文件
-python scripts/postprocess_u_to_csv.py --run-dir $RUN_DIR
+python scripts/postprocess_u_to_csv.py --run-dir ${RUN_DIR}/3D_out
 
 # 或者只转换部分文件（每隔 10 个）
 python scripts/postprocess_u_to_csv.py \
-    --run-dir $RUN_DIR \
+    --run-dir ${RUN_DIR}/3D_out \
     --stride 10
 
 # 检查 CSV 输出
-ls -lh $RUN_DIR/post_csv/ | head -10
-head -20 $RUN_DIR/post_csv/step_000000_time_*.csv
+ls -lh ${RUN_DIR}/3D_out/post_csv/ | head -10
+head -20 ${RUN_DIR}/3D_out/post_csv/step_000000_time_*.csv
 ```
 
 ### 4. 分析数据
@@ -405,10 +428,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 # 读取单个 CSV
-df = pd.read_csv(
-    '3D_out/.../post_csv/step_000100_time_1.000000e-04s.csv',
-    comment='#'
-)
+# 假设 RUN_DIR 已经设置（例如从环境变量或上面的 bash 命令）
+csv_file = f'{RUN_DIR}/3D_out/post_csv/step_000100_time_1.000000e-05s.csv'
+df = pd.read_csv(csv_file, comment='#')
 
 # 分离气相和液相
 gas = df[df['phase'] == 'gas']

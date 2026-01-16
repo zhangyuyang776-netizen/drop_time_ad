@@ -12,8 +12,8 @@ case:
     Run with: mpiexec -n 4 python driver/run_evap_case.py cases/p3_accept_single_petsc_mpi_schur_with_u_output.yaml
 
 paths:
-  output_root: "3D_out"  # Unified spatial output root (NEW)
-  case_dir: "../out/p3_acceptance"  # Legacy output location
+  output_root: "../out/p3_acceptance"
+  case_dir: "../out/p3_acceptance"
   mechanism_dir: "../mechanism"
   gas_mech: "mech.yaml"
 
@@ -206,25 +206,29 @@ output:
 # Post-processing instructions:
 # ============================================================================
 # After running this case, outputs will be in:
-#   3D_out/case_p3_accept_single_petsc_mpi_schur_with_u_output/run_YYYYMMDD_HHMMSS_pidXXXX/
+#   ../out/p3_acceptance/p3_accept_single_petsc_mpi_schur_with_u_output/YYYYMMDD_HHMMSS/
 #
 # Directory structure:
-#   mapping.json              # u vector layout description
-#   steps/
-#     step_000000_time_0.000000e+00s.npz
-#     step_000010_time_1.000000e-06s.npz
-#     step_000020_time_2.000000e-06s.npz
-#     ...
+#   scalars/
+#     scalars.csv
+#   config.yaml
 #   run.log
+#   3D_out/                   # Spatial output subdirectory (NEW)
+#     mapping.json            # u vector layout description
+#     steps/
+#       step_000000_time_0.000000e+00s.npz
+#       step_000010_time_1.000000e-06s.npz
+#       step_000020_time_2.000000e-06s.npz
+#       ...
 #
 # Convert npz files to CSV:
-#   RUN_DIR=$(ls -td 3D_out/case_p3_accept_single_petsc_mpi_schur_with_u_output/run_* | head -1)
+#   RUN_DIR=$(ls -td ../out/p3_acceptance/p3_accept_single_petsc_mpi_schur_with_u_output/*/ | head -1)
 #
 #   python scripts/postprocess_u_to_csv.py \
-#       --run-dir $RUN_DIR \
+#       --run-dir ${RUN_DIR}/3D_out \
 #       --stride 1
 #
-# This creates CSV files in $RUN_DIR/post_csv/ with format:
+# This creates CSV files in ${RUN_DIR}/3D_out/post_csv/ with format:
 #   phase,r,T,Y_N2,Y_O2,Y_NC12H26,Y_n-Dodecane
 #   gas,1.000100e-04,9.000000e+02,7.900000e-01,2.100000e-01,1.000000e-12,
 #   gas,1.000200e-04,8.950000e+02,7.905000e-01,2.095000e-01,5.000000e-13,
@@ -235,8 +239,8 @@ output:
 #
 # Advanced post-processing with time filtering and stride:
 #   python scripts/postprocess_u_to_csv.py \
-#       --run-dir $RUN_DIR \
-#       --t-start 5.0e-6 \
+#       --run-dir ${RUN_DIR}/3D_out \
+#       --t-start 5.0e-7 \
 #       --t-end 1.0e-5 \
 #       --stride 2
 #
@@ -244,7 +248,7 @@ output:
 #   import pandas as pd
 #   import matplotlib.pyplot as plt
 #
-#   df = pd.read_csv('$RUN_DIR/post_csv/step_000050_time_5.000000e-06s.csv', comment='#')
+#   df = pd.read_csv('${RUN_DIR}/3D_out/post_csv/step_000050_time_5.000000e-06s.csv', comment='#')
 #   gas = df[df['phase'] == 'gas']
 #   liq = df[df['phase'] == 'liq']
 #
