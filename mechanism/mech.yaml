@@ -1,0 +1,156 @@
+generator: YamlWriter
+cantera-version: 3.1.0
+git-commit: 6e00275
+date: Fri Sep 12 14:49:01 2025
+phases:
+- name: gas
+  thermo: ideal-gas
+  elements:
+  - N
+  - O
+  - C
+  - H
+  species:
+  - N2
+  - O2
+  - NC7H16
+  - NC12H26
+  kinetics: bulk
+  skip-undeclared-third-bodies: true
+  transport: mixture-averaged
+  state:
+    T: 1000.0
+    density: 0.001
+    P: 101325.0
+    X:
+      N2: 1
+species:
+- name: N2
+  composition:
+    N: 2.0
+  thermo:
+    model: NASA7
+    temperature-ranges:
+    - 200.0
+    - 1000.0
+    - 6000.0
+    data:
+    - - 3.53100528
+      - -0.000123660988
+      - -5.02999433e-07
+      - 2.43530612e-09
+      - -1.40881235e-12
+      - -1046.97628
+      - 2.96747038
+    - - 2.95257637
+      - 0.0013969004
+      - -4.92631603e-07
+      - 7.86010195e-11
+      - -4.60755204e-15
+      - -923.948688
+      - 5.87188762
+    note: G.8.02
+  transport:
+    model: gas
+    geometry: linear
+    diameter: 3.621
+    well-depth: 97.53
+    polarizability: 1.76
+    rotational-relaxation: 4.0
+- name: O2
+  composition:
+    O: 2.0
+  thermo:
+    model: NASA7
+    temperature-ranges:
+    - 200.0
+    - 1000.0
+    - 6000.0
+    data:
+    - - 3.78245636
+      - -0.00299673416
+      - 9.84730201e-06
+      - -9.68129509e-09
+      - 3.24372837e-12
+      - -1063.94356
+      - 3.65767573
+    - - 3.28253784
+      - 0.00148308754
+      - -7.57966669e-07
+      - 2.09470555e-10
+      - -2.16717794e-14
+      - -1088.45772
+      - 5.45323129
+    note: TPIS89
+  transport:
+    model: gas
+    geometry: linear
+    diameter: 3.458
+    well-depth: 107.4
+    polarizability: 1.6
+    rotational-relaxation: 3.8
+- name: NC12H26
+  composition:
+    C: 12.0
+    H: 26.0
+  thermo:
+    model: NASA7
+    temperature-ranges:
+    - 300.0
+    - 1000.0
+    - 5000.0
+    data:
+    - - -3.90122406
+      - 0.154746695
+      - -0.000104474124
+      - 3.69981437e-08
+      - -5.45168968e-12
+      - -39920.2501
+      - 55.555715
+    - - 12.1902013
+      - 0.103773021
+      - -4.53493631e-05
+      - 7.3039414e-09
+      - 0.0
+      - -43899.8796
+      - -25.6534752
+    note: '000000'
+  transport:
+    model: gas
+    geometry: nonlinear
+    diameter: 6.724
+    well-depth: 731.315
+- name: NC7H16
+  composition:
+    C: 7
+    H: 16
+  thermo:
+    model: NASA7
+    temperature-ranges:
+    - 300.0
+    - 1391.0
+    - 5000.0
+    data:
+    - - -1.26836187
+      - 0.085435582
+      - -5.25346786e-05
+      - 1.62945721e-08
+      - -2.02394925e-12
+      - -25658.6565
+      - 35.3732912
+    - - 22.2148969
+      - 0.034767575
+      - -1.18407129e-05
+      - 1.83298478e-09
+      - -1.06130266e-13
+      - -34276.0081
+      - -92.3040196
+  transport:
+    model: gas
+    geometry: nonlinear
+    well-depth: 564.03
+    diameter: 6.004
+    dipole: 0.0
+    polarizability: 0.0
+    rotational-relaxation: 1.0
+reactions: []
