@@ -251,6 +251,48 @@ def build_transport_system_from_ctx(
                 Yg_face=Yg_face,
             )
             eq_result = {"Yg_eq": np.asarray(Yg_eq), "y_cond": np.asarray(y_cond), "psat": np.asarray(psat)}
+
+            # P0.2: NaN/Inf sentinel - catch non-finite values immediately
+            psat_arr = np.asarray(psat)
+            y_cond_arr = np.asarray(y_cond)
+            Yg_eq_arr = np.asarray(Yg_eq)
+            if not np.isfinite(Ts_if):
+                if is_root_rank():
+                    logger.error(
+                        "NONFINITE Ts_if=%.6g step=%s t=%s Pg_if=%.6g",
+                        Ts_if, getattr(ctx, "step", "NA"), getattr(ctx, "t_old", "NA"), Pg_if
+                    )
+                raise ValueError(f"Non-finite Ts_if={Ts_if}")
+            if not np.all(np.isfinite(psat_arr)):
+                psat_bad = psat_arr[~np.isfinite(psat_arr)]
+                if is_root_rank():
+                    logger.error(
+                        "NONFINITE psat step=%s t=%s Ts_if=%.6g bad_values=%s",
+                        getattr(ctx, "step", "NA"), getattr(ctx, "t_old", "NA"), Ts_if, psat_bad
+                    )
+                raise ValueError(f"Non-finite psat at Ts_if={Ts_if}")
+            if not np.all(np.isfinite(y_cond_arr)):
+                y_cond_bad = y_cond_arr[~np.isfinite(y_cond_arr)]
+                if is_root_rank():
+                    logger.error(
+                        "NONFINITE y_cond step=%s t=%s Ts_if=%.6g psat=%.6g bad_values=%s",
+                        getattr(ctx, "step", "NA"), getattr(ctx, "t_old", "NA"), Ts_if,
+                        psat_arr[0] if psat_arr.size > 0 else float("nan"), y_cond_bad
+                    )
+                raise ValueError(f"Non-finite y_cond at Ts_if={Ts_if}")
+            if not np.all(np.isfinite(Yg_eq_arr)):
+                Yg_eq_min = float(np.nanmin(Yg_eq_arr)) if Yg_eq_arr.size > 0 else float("nan")
+                Yg_eq_max = float(np.nanmax(Yg_eq_arr)) if Yg_eq_arr.size > 0 else float("nan")
+                if is_root_rank():
+                    logger.error(
+                        "NONFINITE Yg_eq step=%s t=%s Ts_if=%.6g psat=%.6g sum_y_cond=%.6g Yg_eq_min=%.6g Yg_eq_max=%.6g",
+                        getattr(ctx, "step", "NA"), getattr(ctx, "t_old", "NA"), Ts_if,
+                        psat_arr[0] if psat_arr.size > 0 else float("nan"),
+                        float(np.sum(y_cond_arr)),
+                        Yg_eq_min, Yg_eq_max
+                    )
+                raise ValueError(f"Non-finite Yg_eq at Ts_if={Ts_if}")
+
             # Extract diagnostics from successful computation
             y_cond_sum = float(np.sum(y_cond))
             psat_val = float(np.asarray(psat).reshape(-1)[0]) if np.size(psat) > 0 else float("nan")
@@ -477,6 +519,48 @@ def build_global_residual(
                 Yg_face=Yg_face,
             )
             eq_result = {"Yg_eq": np.asarray(Yg_eq), "y_cond": np.asarray(y_cond), "psat": np.asarray(psat)}
+
+            # P0.2: NaN/Inf sentinel - catch non-finite values immediately
+            psat_arr = np.asarray(psat)
+            y_cond_arr = np.asarray(y_cond)
+            Yg_eq_arr = np.asarray(Yg_eq)
+            if not np.isfinite(Ts_if):
+                if is_root_rank():
+                    logger.error(
+                        "NONFINITE Ts_if=%.6g step=%s t=%s Pg_if=%.6g",
+                        Ts_if, getattr(ctx, "step", "NA"), getattr(ctx, "t_old", "NA"), Pg_if
+                    )
+                raise ValueError(f"Non-finite Ts_if={Ts_if}")
+            if not np.all(np.isfinite(psat_arr)):
+                psat_bad = psat_arr[~np.isfinite(psat_arr)]
+                if is_root_rank():
+                    logger.error(
+                        "NONFINITE psat step=%s t=%s Ts_if=%.6g bad_values=%s",
+                        getattr(ctx, "step", "NA"), getattr(ctx, "t_old", "NA"), Ts_if, psat_bad
+                    )
+                raise ValueError(f"Non-finite psat at Ts_if={Ts_if}")
+            if not np.all(np.isfinite(y_cond_arr)):
+                y_cond_bad = y_cond_arr[~np.isfinite(y_cond_arr)]
+                if is_root_rank():
+                    logger.error(
+                        "NONFINITE y_cond step=%s t=%s Ts_if=%.6g psat=%.6g bad_values=%s",
+                        getattr(ctx, "step", "NA"), getattr(ctx, "t_old", "NA"), Ts_if,
+                        psat_arr[0] if psat_arr.size > 0 else float("nan"), y_cond_bad
+                    )
+                raise ValueError(f"Non-finite y_cond at Ts_if={Ts_if}")
+            if not np.all(np.isfinite(Yg_eq_arr)):
+                Yg_eq_min = float(np.nanmin(Yg_eq_arr)) if Yg_eq_arr.size > 0 else float("nan")
+                Yg_eq_max = float(np.nanmax(Yg_eq_arr)) if Yg_eq_arr.size > 0 else float("nan")
+                if is_root_rank():
+                    logger.error(
+                        "NONFINITE Yg_eq step=%s t=%s Ts_if=%.6g psat=%.6g sum_y_cond=%.6g Yg_eq_min=%.6g Yg_eq_max=%.6g",
+                        getattr(ctx, "step", "NA"), getattr(ctx, "t_old", "NA"), Ts_if,
+                        psat_arr[0] if psat_arr.size > 0 else float("nan"),
+                        float(np.sum(y_cond_arr)),
+                        Yg_eq_min, Yg_eq_max
+                    )
+                raise ValueError(f"Non-finite Yg_eq at Ts_if={Ts_if}")
+
             # Extract diagnostics from successful computation
             y_cond_sum = float(np.sum(y_cond))
             psat_val = float(np.asarray(psat).reshape(-1)[0]) if np.size(psat) > 0 else float("nan")

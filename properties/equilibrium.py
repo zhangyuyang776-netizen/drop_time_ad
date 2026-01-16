@@ -87,6 +87,7 @@ class EquilibriumResult:
     y_bg_total: float          # total mole fraction allocated to background gases
     X_bg_norm: np.ndarray      # (Ns_g,) normalized background mole fractions (source)
     mask_bg: np.ndarray        # (Ns_g,) True for background (non-condensable) species
+    meta: Dict[str, any] = field(default_factory=dict)  # P0.1: source tracking metadata
 
 
 def _psat_coolprop_single(fluid_label: str, T: float) -> Optional[float]:
@@ -114,21 +115,48 @@ def _psat_clausius_single(fluid_label: str, T: float, T_ref: float, p_ref: Optio
 
 def _compute_psat_single(
     fluid_label: str, T: float, psat_model: str, T_ref: float, p_ref: Optional[float]
-) -> float:
-    """Compute psat with CoolProp first (if requested/available), Clausius fallback."""
+) -> Tuple[float, str, str]:
+    """
+    Compute psat with CoolProp first (if requested/available), Clausius fallback.
+
+    Returns:
+        (value, source, reason)
+        - value: psat in Pa
+        - source: "coolprop" | "clausius" | "fallback"
+        - reason: failure reason if fallback was used, else ""
+    """
     if psat_model in ("coolprop", "auto"):
         val = _psat_coolprop_single(fluid_label, T)
         if val is not None:
-            return val
+            return (val, "coolprop", "")
+        # CoolProp failed
+        reason = f"CoolProp failed for {fluid_label} at T={T:.2f}K"
         if psat_model == "coolprop":
-            warnings.warn(f"CoolProp psat failed for {fluid_label}; falling back to Clausius.")
-    # Clausius fallback
-    return _psat_clausius_single(fluid_label, T, T_ref, p_ref)
+            warnings.warn(f"{reason}; falling back to Clausius.")
+        # Fallback to Clausius
+        val_clausius = _psat_clausius_single(fluid_label, T, T_ref, p_ref)
+        return (val_clausius, "fallback", reason)
+    # Direct Clausius (psat_model == "clausius")
+    val = _psat_clausius_single(fluid_label, T, T_ref, p_ref)
+    return (val, "clausius", "")
 
 
-def _psat_vec_all(model: EquilibriumModel, T: float) -> np.ndarray:
-    """Compute psat vector for all liquid species using model settings."""
-    psat = np.zeros(len(model.liq_names), dtype=np.float64)
+def _psat_vec_all_with_meta(
+    model: EquilibriumModel, T: float
+) -> Tuple[np.ndarray, List[str], List[str]]:
+    """
+    Compute psat vector for all liquid species with source tracking.
+
+    Returns:
+        (psat, sources, reasons)
+        - psat: (Ns_l,) saturation pressures [Pa]
+        - sources: list of "coolprop"/"clausius"/"fallback" for each species
+        - reasons: list of failure reasons (empty string if no fallback)
+    """
+    Ns_l = len(model.liq_names)
+    psat = np.zeros(Ns_l, dtype=np.float64)
+    sources: List[str] = []
+    reasons: List[str] = []
     for i, name in enumerate(model.liq_names):
         p_ref = model.psat_ref.get(name)
         base_label = model.cp_fluids[i] if i < len(model.cp_fluids) else name
@@ -137,8 +165,17 @@ def _psat_vec_all(model: EquilibriumModel, T: float) -> np.ndarray:
             fluid_label = base_label
         else:
             fluid_label = f"{model.cp_backend}::{base_label}"
-        psat[i] = _compute_psat_single(fluid_label, T, model.psat_model, model.T_ref, p_ref)
+        val, src, reason = _compute_psat_single(fluid_label, T, model.psat_model, model.T_ref, p_ref)
+        psat[i] = val
+        sources.append(src)
+        reasons.append(reason)
     psat = np.nan_to_num(psat, nan=0.0, posinf=0.0, neginf=0.0)
+    return psat, sources, reasons
+
+
+def _psat_vec_all(model: EquilibriumModel, T: float) -> np.ndarray:
+    """Compute psat vector for all liquid species using model settings (legacy wrapper)."""
+    psat, _, _ = _psat_vec_all_with_meta(model, T)
     return psat
 
 
@@ -265,7 +302,8 @@ def compute_interface_equilibrium_full(
 
     X_liq = mass_to_mole(Yl_face, model.M_l)
 
-    psat = _psat_vec_all(model, Ts)
+    # P0.1: Use meta-tracking version to capture psat source
+    psat, psat_sources, psat_reasons = _psat_vec_all_with_meta(model, Ts)
     psat = np.clip(psat, 0.0, np.inf)
 
     idxL = model.idx_cond_l
@@ -317,6 +355,35 @@ def compute_interface_equilibrium_full(
     if s_Yg > EPS and not np.isclose(s_Yg, 1.0, rtol=1e-12, atol=1e-12):
         Yg_eq = Yg_eq / s_Yg
 
+    # P0.1: Build meta dict with source tracking
+    psat_source_summary = "coolprop"
+    fallback_reason_summary = ""
+    if any(src in ("fallback", "clausius") for src in psat_sources):
+        if all(src == "clausius" for src in psat_sources):
+            psat_source_summary = "clausius"
+        else:
+            psat_source_summary = "fallback"
+        # Collect non-empty reasons
+        reasons_list = [r for r in psat_reasons if r]
+        if reasons_list:
+            fallback_reason_summary = "; ".join(reasons_list)
+
+    # P0.1: Check finite validity
+    finite_ok = (
+        np.all(np.isfinite(psat))
+        and np.all(np.isfinite(y_cond))
+        and np.all(np.isfinite(Yg_eq))
+    )
+
+    meta = {
+        "psat_sources": psat_sources,  # List per species
+        "psat_reasons": psat_reasons,  # List per species
+        "psat_source": psat_source_summary,  # "coolprop" | "fallback" | "clausius" | "mixed"
+        "hvap_source": "not_computed",  # Placeholder (hvap not tracked in equilibrium.py)
+        "fallback_reason": fallback_reason_summary,
+        "finite_ok": finite_ok,
+    }
+
     return EquilibriumResult(
         Yg_eq=Yg_eq,
         y_all=y_all,
@@ -329,6 +396,7 @@ def compute_interface_equilibrium_full(
         y_bg_total=y_bg_total,
         X_bg_norm=X_bg_norm,
         mask_bg=mask_bg,
+        meta=meta,
     )
 
 

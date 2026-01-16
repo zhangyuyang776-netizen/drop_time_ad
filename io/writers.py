@@ -748,6 +748,11 @@ _INTERFACE_DIAG_FIELDS = [
     "eq_source",
     "eq_exc_type",
     "eq_exc_msg",
+    # P0.1: New fields for source tracking
+    "psat_source",
+    "hvap_source",
+    "fallback_reason",
+    "finite_ok",
 ]
 
 
