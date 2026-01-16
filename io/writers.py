@@ -3,13 +3,22 @@ Output helpers:
 - ScalarsWriter: configurable scalar output to CSV with optional cumulative diagnostics.
 - write_step_scalars: stateless per-step scalars (fields controlled by cfg.io.fields.scalars).
 - write_step_spatial: spatial snapshot output.
+- get_run_dir: unified output directory management (3D_out/case_xxx/run_yyy/).
+- build_u_mapping: generate mapping.json for u vector layout.
+- write_step_u: write u vector + grid coordinates to npz files.
 """
 
 from __future__ import annotations
 
 import csv
+import json
 import logging
 import math
+import os
+import sys
+import tempfile
+import time
+from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -20,8 +29,298 @@ from properties.equilibrium import compute_interface_equilibrium
 
 if TYPE_CHECKING:  # pragma: no cover - type checking only
     from solvers.timestepper import StepDiagnostics
+    from core.layout import UnknownLayout
 
 logger = logging.getLogger(__name__)
+
+# ============================================================================
+# Step 1: Unified output directory management
+# ============================================================================
+
+_RUN_DIR_CACHE: dict[int, Path] = {}
+
+
+def get_run_dir(cfg: CaseConfig) -> Path:
+    """
+    Get the unified run directory for this execution.
+
+    Returns 3D_out/case_<id>/run_<timestamp>/
+    Uses module-level cache to ensure same directory across entire run.
+    """
+    cfg_id = id(cfg)
+    if cfg_id in _RUN_DIR_CACHE:
+        return _RUN_DIR_CACHE[cfg_id]
+
+    # Determine output root (default to "3D_out")
+    output_root = getattr(getattr(cfg, "paths", None), "output_root", None)
+    if output_root is None or str(output_root) == "out":
+        output_root = "3D_out"
+
+    # Determine case identifier
+    case_id = getattr(getattr(cfg, "case", None), "id", "default")
+    if not case_id or case_id == "default":
+        case_id = "case_default"
+
+    # Generate unique run ID using timestamp
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    pid = os.getpid()
+    run_id = f"run_{timestamp}_pid{pid}"
+
+    # Build full path
+    run_dir = Path(output_root) / f"case_{case_id}" / run_id
+    run_dir.mkdir(parents=True, exist_ok=True)
+
+    # Cache it
+    _RUN_DIR_CACHE[cfg_id] = run_dir
+
+    logger.info(f"Unified run directory: {run_dir}")
+    return run_dir
+
+
+# ============================================================================
+# Step 2: Build and write mapping.json
+# ============================================================================
+
+
+def build_u_mapping(cfg: CaseConfig, grid: Grid1D, layout: "UnknownLayout") -> dict:
+    """
+    Build mapping metadata for the u vector layout.
+
+    Returns a dictionary describing how to unpack u into fields:
+    - version, endianness, dtype, ordering
+    - blocks: list of {name, offset, size, shape, optional}
+    - meta: grid sizes, species lists, etc.
+    """
+    blocks = []
+    offset = 0
+
+    # Iterate through blocks in layout order
+    for block_name, block_slice in layout.iter_blocks():
+        block_start = block_slice.start
+        block_stop = block_slice.stop
+        block_size = block_stop - block_start
+
+        # Determine shape based on block type
+        if block_name == "Tg":
+            shape = [layout.Ng]
+            name_display = "Tg"
+        elif block_name == "Yg":
+            # Yg is reduced species, stored as (ig * Ns_g_eff + k_red)
+            shape = [layout.Ns_g_eff, layout.Ng]
+            name_display = "Yg"
+        elif block_name == "Tl":
+            shape = [layout.Nl]
+            name_display = "Tl"
+        elif block_name == "Yl":
+            # Yl is reduced species
+            shape = [layout.Ns_l_eff, layout.Nl]
+            name_display = "Yl"
+        elif block_name == "Ts":
+            shape = [1]
+            name_display = "Ts"
+        elif block_name == "mpp":
+            shape = [1]
+            name_display = "mpp"
+        elif block_name == "Rd":
+            shape = [1]
+            name_display = "Rd"
+        else:
+            # Unknown block, use flat shape
+            shape = [block_size]
+            name_display = block_name
+
+        block_info = {
+            "name": name_display,
+            "offset": int(block_start),
+            "size": int(block_size),
+            "shape": [int(s) for s in shape],
+        }
+
+        # Mark optional blocks (Yl might not always be present)
+        if block_name in ("Yl", "Ts", "mpp", "Rd"):
+            block_info["optional"] = True
+
+        blocks.append(block_info)
+
+    # Build metadata
+    meta = {
+        "Ng": int(layout.Ng),
+        "Nl": int(layout.Nl),
+        "Ns_g_full": int(layout.Ns_g_full),
+        "Ns_g_eff": int(layout.Ns_g_eff),
+        "Ns_l_full": int(layout.Ns_l_full),
+        "Ns_l_eff": int(layout.Ns_l_eff),
+        "species_g_full": list(layout.gas_species_full),
+        "species_g_reduced": list(layout.gas_species_reduced),
+        "species_g_closure": layout.gas_closure_species,
+        "species_l_full": list(layout.liq_species_full),
+        "species_l_reduced": list(layout.liq_species_reduced),
+        "species_l_closure": layout.liq_closure_species,
+    }
+
+    # Determine system properties
+    endianness = sys.byteorder  # 'little' or 'big'
+
+    mapping = {
+        "version": 1,
+        "endianness": endianness,
+        "dtype": "float64",
+        "ordering": "C",  # Row-major (C-style)
+        "total_size": int(layout.size),
+        "blocks": blocks,
+        "meta": meta,
+    }
+
+    return mapping
+
+
+def write_mapping_json(cfg: CaseConfig, grid: Grid1D, layout: "UnknownLayout", run_dir: Path | None = None) -> None:
+    """
+    Write mapping.json to the run directory.
+
+    Uses atomic write (temp file + rename) to avoid corruption.
+    Rank0-only in parallel contexts.
+    """
+    # Check if we're rank 0 in MPI context (simple check)
+    try:
+        from mpi4py import MPI
+
+        comm = MPI.COMM_WORLD
+        rank = comm.Get_rank()
+        if rank != 0:
+            return  # Only rank 0 writes
+    except ImportError:
+        pass  # Serial mode, proceed
+
+    if run_dir is None:
+        run_dir = get_run_dir(cfg)
+
+    mapping = build_u_mapping(cfg, grid, layout)
+
+    out_path = run_dir / "mapping.json"
+    tmp_path = run_dir / "mapping.json.tmp"
+
+    # Write to temp file
+    with open(tmp_path, "w") as f:
+        json.dump(mapping, f, indent=2)
+
+    # Atomic rename
+    os.replace(tmp_path, out_path)
+
+    logger.info(f"Wrote mapping.json: {out_path}")
+
+
+# ============================================================================
+# Step 3: Write u vector + grid coordinates to npz files
+# ============================================================================
+
+
+def write_step_u(
+    cfg: CaseConfig, step_id: int, t: float, u: np.ndarray, grid: Grid1D, run_dir: Path | None = None
+) -> None:
+    """
+    Write u vector and grid coordinates for a single time step.
+
+    Output: <run_dir>/steps/step_{step_id:06d}_time_{t:.6e}s.npz
+
+    Contents:
+    - step_id: int
+    - t: float (seconds)
+    - u: float64 1D array (full unknown vector)
+    - r_g: float64 1D array (gas phase cell centers)
+    - r_l: float64 1D array (liquid phase cell centers)
+    - rf_g: float64 1D array (gas phase face centers)
+    - rf_l: float64 1D array (liquid phase face centers)
+    - iface_f: int (interface face index)
+
+    Rank0-only in parallel contexts.
+    """
+    # Check if we're rank 0 in MPI context
+    try:
+        from mpi4py import MPI
+
+        comm = MPI.COMM_WORLD
+        rank = comm.Get_rank()
+        if rank != 0:
+            return  # Only rank 0 writes
+    except ImportError:
+        pass  # Serial mode, proceed
+
+    if run_dir is None:
+        run_dir = get_run_dir(cfg)
+
+    steps_dir = run_dir / "steps"
+    steps_dir.mkdir(parents=True, exist_ok=True)
+
+    # Generate filename
+    filename = f"step_{step_id:06d}_time_{t:.6e}s.npz"
+    out_path = steps_dir / filename
+
+    # Extract grid coordinates
+    r_c = np.asarray(grid.r_c, dtype=np.float64)
+    r_f = np.asarray(grid.r_f, dtype=np.float64)
+
+    # Split into gas/liquid
+    liq_slice, gas_slice = grid.split_cells()
+    r_l = r_c[liq_slice]
+    r_g = r_c[gas_slice]
+
+    # Face coordinates (interface is at index Nl)
+    rf_l = r_f[: grid.Nl + 1]  # 0 to Nl (inclusive)
+    rf_g = r_f[grid.Nl :]  # Nl to end
+
+    # Save to npz
+    np.savez(
+        out_path,
+        step_id=np.asarray(step_id, dtype=np.int32),
+        t=np.asarray(t, dtype=np.float64),
+        u=np.asarray(u, dtype=np.float64),
+        r_g=r_g,
+        r_l=r_l,
+        rf_g=rf_g,
+        rf_l=rf_l,
+        iface_f=np.asarray(grid.iface_f, dtype=np.int32),
+    )
+
+    logger.debug(f"Wrote step file: {out_path}")
+
+
+# ============================================================================
+# Step 4: Output control strategy
+# ============================================================================
+
+
+def should_write_u(cfg: CaseConfig, step_id: int) -> bool:
+    """
+    Determine if u vector should be written for this time step.
+
+    Checks:
+    1. Environment variable DROPLET_WRITE_U=1 (force enable)
+    2. cfg.output.u_enabled (bool, default False)
+    3. cfg.output.u_every (int, default 1) - write every N steps
+
+    Returns True if u should be written for this step_id.
+    """
+    # Check environment variable (override)
+    env_enabled = os.getenv("DROPLET_WRITE_U", "0") == "1"
+    if env_enabled:
+        return True
+
+    # Check config
+    output_cfg = getattr(cfg, "output", None)
+    if output_cfg is None:
+        return False
+
+    u_enabled = getattr(output_cfg, "u_enabled", False)
+    if not u_enabled:
+        return False
+
+    u_every = int(getattr(output_cfg, "u_every", 1))
+    if u_every <= 0:
+        return False
+
+    # Check frequency
+    return (step_id % u_every) == 0
 
 
 def _ensure_parent(path: Path) -> None:

@@ -618,6 +618,53 @@ def _maybe_write_spatial(cfg: CaseConfig, grid: Grid1D, state: State, step_id: i
         logger.warning("write_step_spatial failed at step %s: %s", step_id, exc)
 
 
+# Track if mapping.json has been written (module-level)
+_MAPPING_WRITTEN = False
+
+
+def _write_mapping_once(cfg: CaseConfig, grid: Grid1D, layout) -> None:
+    """Write mapping.json once at the start of the run."""
+    global _MAPPING_WRITTEN
+    if _MAPPING_WRITTEN:
+        return
+
+    try:
+        module = _load_writers_module()
+        write_fn = getattr(module, "write_mapping_json", None)
+        if write_fn is None:
+            return
+        write_fn(cfg=cfg, grid=grid, layout=layout, run_dir=None)
+        _MAPPING_WRITTEN = True
+    except Exception as exc:  # pragma: no cover - best-effort output
+        logger.warning("write_mapping_json failed: %s", exc)
+
+
+def _maybe_write_u(cfg, grid: Grid1D, state: State, layout, step_id: int, t: float) -> None:
+    """Write u vector and grid coordinates at configured frequency."""
+    try:
+        module = _load_writers_module()
+        should_write_fn = getattr(module, "should_write_u", None)
+        if should_write_fn is None:
+            return
+
+        if not should_write_fn(cfg, step_id):
+            return
+
+        # Pack state into u vector
+        from core.layout import pack_state
+
+        u, _, _ = pack_state(state, layout)
+
+        # Write u vector
+        write_fn = getattr(module, "write_step_u", None)
+        if write_fn is None:
+            return
+        write_fn(cfg=cfg, step_id=step_id, t=t, u=u, grid=grid, run_dir=None)
+
+    except Exception as exc:  # pragma: no cover - best-effort output
+        logger.warning("write_step_u failed at step %s: %s", step_id, exc)
+
+
 # -----------------------------------------------------------------------------
 # Main driver
 # -----------------------------------------------------------------------------
@@ -775,6 +822,9 @@ def run_case(
 
         grid = build_grid(cfg)
         layout = build_layout(cfg, grid)
+
+        # Write mapping.json once after layout is created
+        _write_mapping_once(cfg, grid, layout)
 
         state = build_initial_state_erfc(cfg, grid, gas_model, liq_model)
         props, _ = compute_props(cfg, grid, state)
@@ -999,6 +1049,9 @@ def run_case(
                     logger.warning("Failed to write scalars at step %s: %s", step_id, exc)
 
             _maybe_write_spatial(cfg, grid, state, step_id, t)
+
+            # Write u vector and grid coordinates (new spatial output)
+            _maybe_write_u(cfg, grid, state, layout, step_id, t)
 
             if Rd_stop is not None:
                 try:
