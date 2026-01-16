@@ -1,0 +1,134 @@
+case:
+  id: case_001
+  title: "NoChem MVP: single-component droplet (n-Dodecane), static grid"
+  version: 2
+  notes: "Step0 skeleton. Fill details after modules exist."
+
+paths:
+  output_root: "out"
+  case_dir: "out/case_001"
+  mechanism_dir: "mechanism"
+  gas_mech: "gas_minimal.yaml"
+
+conventions:
+  radial_normal: "+er"                  # n = +e_r
+  flux_sign: "outward_positive"         # outflow is positive
+  heat_flux_def: "q=-k*dTdr"            # q = -lambda * dT/dr
+  evap_sign: "mpp_positive_evaporation" # m'' > 0 means evaporation
+  gas_closure_species: "N2"             # sum(Y)=1 closure handled centrally same with species.gas_balance_species
+  index_source: "unknown_layout_only"   # UnknownLayout is the sole index map
+  assembly_pure: true                   # build_system writes A,b only
+  grid_state_props_split: true          # Grid/State/Props remain separated
+
+physics:
+  model: "droplet_1d_spherical_noChem"
+  enable_liquid: true
+  include_chemistry: false
+
+  # Unknown toggles (align with CasePhysics)
+  solve_Tg: true
+  solve_Yg: true
+  solve_Tl: true
+  solve_Yl: false           # MVP can start with liquid species off
+  include_Ts: false         # bc_mode=Ts_fixed, so Ts is not an unknown
+  include_mpp: true         # keep m'' as unknown for coupling
+  include_Rd: true          # keep Rd equation wired in
+  stefan_velocity: true     # derived field, not in UnknownLayout
+
+  interface:
+    type: "no_condensation"
+    # Step10 bridge: interface-side Dirichlet Tl(Rd)=Ts_fixed
+    bc_mode: "Ts_fixed"
+    Ts_fixed: 300.0
+
+    # Placeholders for when equilibrium/interface BC is wired in
+    equilibrium:
+      method: "raoult_psat"
+      psat_model: "coolprop"           # auto|coolprop|clausius
+      condensables_gas: ["NC12H26"]    # gas-phase names corresponding to liquid species
+      coolprop:
+        backend: "HEOS"
+        fluids: ["n-Dodecane"]
+
+species:
+  # Gas species list should be read from mechanism (paths.mechanism_dir/paths.gas_mech)
+  gas_balance_species: "N2"            # closure species for reduced formulation
+  gas_mechanism_phase: "gas"           # optional: default gas phase name in mechanism
+
+  # Liquid species are explicitly defined (must include balance species)
+  liq_species: ["n-Dodecane"]
+  liq_balance_species: "n-Dodecane"    # MUST NOT be null
+
+  liq2gas_map:
+    n-Dodecane: "NC12H26"
+  # Liquid molar masses (kg/mol); gas MW comes from Cantera.
+  mw_kg_per_mol:
+    n-Dodecane: 0.17034
+  molar_volume_cm3_per_mol:
+    n-Dodecane: 227.51
+
+geometry:
+  a0: 1.0e-4
+  R_inf: 1.0e-2
+  N_liq: 10
+  N_gas: 100
+  mesh:
+    liq_method: "tanh"
+    liq_beta: 2.0
+    liq_center_bias: 0.4
+    gas_method: "tanh"
+    gas_beta: 2.0
+    gas_center_bias: -0.4
+    enforce_interface_continuity: true
+    continuity_tol: 1.0e-12
+
+time:
+  t0: 0.0
+  dt: 1.0e-6
+  t_end: 1.0e-3
+  max_steps: null
+
+discretization:
+  time_scheme: "BE"     # BE | theta
+  theta: 1.0            # used only when time_scheme=theta
+  mass_matrix: "rhoVc_p"
+
+initial:
+  T_inf: 1100.0
+  P_inf: 101325.0
+  T_d0: 300.0
+  Yg: {"N2": 1.0}                # minimal gas composition placeholder
+  Yl: {"n-Dodecane": 1.0}
+  Y_seed: 1.0e-12
+
+petsc:
+  options_prefix: "droplet_"
+  ksp_type: "gmres"
+  pc_type: "ilu"
+  rtol: 1.0e-8
+  atol: 1.0e-12
+  max_it: 200
+  restart: 50
+  monitor: true
+
+io:
+  write_every: 1
+  scalars_write_every: 1
+  formats: ["csv", "npz"]
+  save_grid: true
+  fields:
+    scalars: ["t", "Ts", "mpp", "Rd"]
+    gas: ["Tg", "Yg"]
+    liquid: ["Tl", "Yl"]
+
+checks:
+  enforce_sumY: true
+  sumY_tol: 1.0e-10
+  clamp_negative_Y: true
+  min_Y: 0.0
+  enforce_T_bounds: true
+  T_min: 200.0
+  T_max: 4000.0
+  enforce_unique_index: true
+  enforce_grid_state_props_split: true
+  enforce_assembly_purity: true

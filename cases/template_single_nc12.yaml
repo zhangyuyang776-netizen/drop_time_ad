@@ -1,0 +1,230 @@
+# Template: single-component droplet (liquid n-Dodecane)
+# Gas mechanism species are defined in mechanism/mech.yaml (NC12H26, NC7H16, N2, O2).
+# This is a commented template; adjust values and remove comments as needed.
+
+case:
+  # Unique case ID (used for output directory naming).
+  id: template_single_nc12
+  # Human-readable description.
+  title: "Template: single-component droplet (n-Dodecane)"
+  # User-defined version tag.
+  version: 1
+  # Optional notes for tracking experiments.
+  notes: "Single-component liquid; Raoult equilibrium; Ts+mpp+Rd enabled."
+
+paths:
+  # Output root directory (relative or absolute).
+  output_root: "../out/template_single_nc12"
+  # Optional case_dir override; if omitted, driver uses output_root/case.id/timestamp.
+  case_dir: "../out/template_single_nc12"
+  # Directory containing the gas mechanism file.
+  mechanism_dir: "../mechanism"
+  # Gas mechanism YAML filename (relative to mechanism_dir).
+  gas_mech: "mech.yaml"
+
+conventions:
+  # Radial normal direction (project convention).
+  radial_normal: "+er"
+  # Flux sign convention (used for diagnostics).
+  flux_sign: "outward_positive"
+  # Heat flux definition (documentation/diagnostics only).
+  heat_flux_def: "q=-k*dTdr"
+  # Evaporation sign convention for mpp diagnostics.
+  evap_sign: "mpp_positive_evaporation"
+  # Gas closure species (must match species.gas_balance_species).
+  gas_closure_species: "N2"
+  # Indexing convention (debug/diagnostic tag).
+  index_source: "unknown_layout_only"
+  # Assembly purity flags (debug checks).
+  assembly_pure: true
+  grid_state_props_split: true
+
+physics:
+  # Physics model tag (no chemistry in this project stage).
+  model: "droplet_1d_spherical_noChem"
+  enable_liquid: true
+  include_chemistry: false
+
+  # Unknown toggles (choose which fields are solved).
+  solve_Tg: true
+  solve_Yg: true
+  solve_Tl: true
+  solve_Yl: false         # single component; Yl is trivially 1
+  include_Ts: true
+  include_mpp: true
+  include_Rd: true
+  stefan_velocity: true
+
+  interface:
+    # Interface model type. "no_condensation" clamps mpp >= 0.
+    # Any other string effectively allows condensation (no clamp).
+    type: "no_condensation"
+    # Boundary condition mode for Ts.
+    # Options: "Ts_fixed" (Dirichlet) | "equilibrium" (solve Ts via interface energy balance).
+    bc_mode: "equilibrium"
+    # Fixed Ts value used only when bc_mode="Ts_fixed".
+    Ts_fixed: 300.0
+    equilibrium:
+      # Equilibrium method (current implementation: "raoult_psat").
+      method: "raoult_psat"
+      # psat model: "auto" | "coolprop" | "clausius".
+      psat_model: "coolprop"
+      # Condensable gas species (mechanism names).
+      condensables_gas: ["NC12H26"]
+      coolprop:
+        # CoolProp backend (e.g., "HEOS").
+        backend: "HEOS"
+        # CoolProp fluid label aligned with liq_species.
+        fluids: ["n-Dodecane"]
+
+species:
+  # Gas closure species (must be in mechanism species list).
+  gas_balance_species: "N2"
+  # Mechanism phase name used by Cantera (from mech.yaml).
+  gas_mechanism_phase: "gas"
+
+  # Liquid species names (CoolProp fluids).
+  liq_species: ["n-Dodecane"]
+  # Liquid closure species (must be in liq_species).
+  liq_balance_species: "n-Dodecane"
+
+  # Map liquid species -> gas mechanism species names.
+  liq2gas_map:
+    n-Dodecane: "NC12H26"
+  # Liquid molar masses (kg/mol); gas MW comes from Cantera.
+  mw_kg_per_mol:
+    n-Dodecane: 0.17034
+  # Molar volume (cm^3/mol); used in liquid property correlations.
+  molar_volume_cm3_per_mol:
+    n-Dodecane: 227.51
+
+geometry:
+  # Initial droplet radius [m].
+  a0: 1.0e-4
+  # Far-field outer radius [m].
+  R_inf: 5.0e-3
+  # Number of liquid cells.
+  N_liq: 6
+  # Number of gas cells.
+  N_gas: 60
+  mesh:
+    # Mesh distribution method: "uniform" | "tanh".
+    liq_method: "tanh"
+    liq_beta: 2.0
+    # Center bias for liquid mesh: positive => cluster near center.
+    liq_center_bias: 0.4
+    gas_method: "tanh"
+    gas_beta: 2.0
+    # Center bias for gas mesh: negative => cluster near interface.
+    gas_center_bias: -0.4
+    # Enforce continuity at the interface between liquid/gas mesh.
+    enforce_interface_continuity: true
+    # Tolerance for continuity enforcement.
+    continuity_tol: 1.0e-5
+
+time:
+  # Start time [s].
+  t0: 0.0
+  # Time step [s].
+  dt: 1.0e-6
+  # End time [s].
+  t_end: 2.0e-4
+  # Optional cap on steps; null means no cap.
+  max_steps: null
+
+discretization:
+  # Time scheme: "BE" (backward Euler) | "theta".
+  time_scheme: "BE"
+  # Theta value used when time_scheme="theta".
+  theta: 1.0
+  # Mass matrix model (current code expects "rhoVc_p").
+  mass_matrix: "rhoVc_p"
+
+initial:
+  # Far-field gas temperature [K].
+  T_inf: 900.0
+  # Far-field gas pressure [Pa].
+  P_inf: 101325.0
+  # Initial droplet temperature [K].
+  T_d0: 300.0
+  # Far-field gas composition (mechanism species; must sum to 1).
+  Yg: {"N2": 0.79, "O2": 0.21}
+  # Initial liquid composition (liq_species; must sum to 1).
+  Yl:
+    n-Dodecane: 1.0
+  # Small seed for diffuse interface initialization.
+  Y_seed: 1.0e-12
+  # Optional vapor seed at interface (used in initial profile builder).
+  Y_vap_if0: 1.0e-6
+
+transport:
+  # Liquid diffusion coefficient default [m^2/s].
+  D_l_const: 1.0e-9
+  # Species-specific liquid diffusion overrides (by liquid species name).
+  D_l_species: {}
+
+nonlinear:
+  # Enable global nonlinear solve (Step 19); false => linear stepper only.
+  enabled: false
+  # Backend: "scipy" (current) | "petsc" (reserved).
+  backend: "scipy"
+  # Nonlinear solver: "newton_krylov" | "root_hybr".
+  solver: "newton_krylov"
+  # Inner Krylov method for newton_krylov: "lgmres" | "gmres" | "bicgstab" (SciPy).
+  krylov_method: "lgmres"
+  # Max nonlinear (outer) iterations.
+  max_outer_iter: 20
+  # Max inner Krylov iterations per outer step.
+  inner_maxiter: 20
+  # Residual tolerances passed to SciPy.
+  f_rtol: 1.0e-6
+  f_atol: 1.0e-10
+  # Use variable scaling from layout.pack_state.
+  use_scaled_unknowns: true
+  use_scaled_residual: true
+  # Verbose output from SciPy solver.
+  verbose: false
+
+petsc:
+  # PETSc options (also used for SciPy linear solver tolerances).
+  options_prefix: "droplet_"
+  ksp_type: "gmres"
+  pc_type: "ilu"
+  rtol: 1.0e-8
+  atol: 1.0e-12
+  max_it: 200
+  restart: 50
+  monitor: true
+
+io:
+  # Spatial output cadence (0 disables spatial output).
+  write_every: 0
+  # Scalars output cadence (independent from write_every).
+  scalars_write_every: 1
+  # Output formats list (empty disables spatial output).
+  formats: []
+  # Save grid files for each output.
+  save_grid: false
+  fields:
+    # Scalar outputs (names must match writers.py).
+    scalars: ["t", "Ts", "mpp", "Rd"]
+    # Gas fields (e.g., "Tg", "Yg").
+    gas: ["Tg", "Yg"]
+    # Liquid fields (e.g., "Tl", "Yl").
+    liquid: ["Tl"]
+
+checks:
+  # Enforce sum(Y)=1 checks for gas/liquid.
+  enforce_sumY: true
+  sumY_tol: 1.0e-10
+  # Clamp negative Y values after solve.
+  clamp_negative_Y: true
+  min_Y: 0.0
+  # Enforce temperature bounds.
+  enforce_T_bounds: true
+  T_min: 200.0
+  T_max: 4000.0
+  # Debug checks for layout/assembly consistency.
+  enforce_unique_index: true
+  enforce_grid_state_props_split: true
+  enforce_assembly_purity: true

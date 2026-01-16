@@ -1,0 +1,140 @@
+case:
+  id: evap_single
+  title: "single_component_evap_no_chem"
+  version: 1
+  notes: "Single-component (NC12H26) evaporation; SciPy linear split; Ts/mpp/Rd on."
+
+paths:
+  output_root: "../out"
+  case_dir: "../out/evap_single"
+  mechanism_dir: "../mechanism"
+  gas_mech: "mech.yaml"
+
+conventions:
+  radial_normal: "+er"
+  flux_sign: "outward_positive"
+  heat_flux_def: "q=-k*dTdr"
+  evap_sign: "mpp_positive_evaporation"
+  gas_closure_species: "N2"
+  index_source: "unknown_layout_only"
+  assembly_pure: true
+  grid_state_props_split: true
+
+physics:
+  model: "droplet_1d_spherical_noChem"
+  enable_liquid: true
+  include_chemistry: false
+
+  solve_Tg: true
+  solve_Yg: true
+  solve_Tl: true
+  solve_Yl: false
+
+  include_Ts: true
+  include_mpp: true
+  include_Rd: true
+  stefan_velocity: true
+
+  interface:
+    type: "no_condensation"
+    bc_mode: "Ts_fixed"
+    Ts_fixed: 300.0
+    equilibrium:
+      method: "raoult_psat"
+      psat_model: "coolprop"
+      condensables_gas: ["NC12H26"]
+      coolprop:
+        backend: "HEOS"
+        fluids: ["n-Dodecane"]
+
+species:
+  gas_balance_species: "N2"
+  gas_mechanism_phase: "gas"
+
+  liq_species: ["n-Dodecane"]
+  liq_balance_species: "n-Dodecane"
+
+  liq2gas_map:
+    n-Dodecane: "NC12H26"
+
+  # Liquid molar masses (kg/mol); gas MW comes from Cantera.
+  mw_kg_per_mol:
+    n-Dodecane: 0.17034
+  molar_volume_cm3_per_mol:
+    n-Dodecane: 227.51
+
+geometry:
+  a0: 1.0e-4
+  R_inf: 2.0e-3
+  N_liq: 6
+  N_gas: 60
+  mesh:
+    liq_method: "tanh"
+    liq_beta: 2.0
+    liq_center_bias: 0.4
+    gas_method: "tanh"
+    gas_beta: 2.0
+    gas_center_bias: -0.4
+    enforce_interface_continuity: true
+    continuity_tol: 1.0e-5
+
+time:
+  t0: 0.0
+  dt: 1.0e-5
+  t_end: 2.0e-2
+  max_steps: null
+
+discretization:
+  time_scheme: "BE"
+  theta: 1.0
+  mass_matrix: "rhoVc_p"
+
+initial:
+  T_inf: 1000.0
+  P_inf: 1.0e5
+  T_d0: 300.0
+  Yg:
+    O2: 0.21
+    N2: 0.79
+  Yl:
+    NC12H26: 1.0
+  Y_seed: 1.0e-12
+  t_init_T: 1.0e-6
+  Y_vap_if0: 1.0e-6
+
+transport:
+  D_l_const: 1.0e-9
+  D_l_species: {}
+
+petsc:
+  options_prefix: "droplet_"
+  ksp_type: "gmres"
+  pc_type: "ilu"
+  rtol: 1.0e-8
+  atol: 1.0e-12
+  max_it: 200
+  restart: 50
+  monitor: true
+
+io:
+  write_every: 10
+  scalars_write_every: 10
+  formats: ["csv", "npy"]
+  save_grid: true
+  fields:
+    scalars: ["Ts", "Rd", "mpp", "Tg_min", "Tg_max", "Tl_min", "Tl_max"]
+    gas: ["Tg", "Yg"]
+    liquid: ["Tl"]
+    interface: ["Ts", "mpp", "Rd"]
+
+checks:
+  enforce_sumY: true
+  sumY_tol: 1.0e-10
+  clamp_negative_Y: true
+  min_Y: 0.0
+  enforce_T_bounds: true
+  T_min: 200.0
+  T_max: 4000.0
+  enforce_unique_index: true
+  enforce_grid_state_props_split: true
+  enforce_assembly_purity: true

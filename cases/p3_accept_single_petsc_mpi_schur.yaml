@@ -1,0 +1,195 @@
+case:
+  id: p3_accept_single_petsc_mpi_schur
+  title: "P3 acceptance: single-component PETSc MPI (mfpc_sparse_fd + fieldsplit schur)"
+  version: 1
+  notes: "Run with mpiexec -n 1 and -n 4, then compare scalars/time for P3 acceptance."
+
+paths:
+  output_root: "../out/p3_acceptance"
+  case_dir: "../out/p3_acceptance"
+  mechanism_dir: "../mechanism"
+  gas_mech: "mech.yaml"
+
+conventions:
+  radial_normal: "+er"
+  flux_sign: "outward_positive"
+  heat_flux_def: "q=-k*dTdr"
+  evap_sign: "mpp_positive_evaporation"
+  gas_closure_species: "N2"
+  index_source: "unknown_layout_only"
+  assembly_pure: true
+  grid_state_props_split: true
+
+physics:
+  model: "droplet_1d_spherical_noChem"
+  enable_liquid: true
+  include_chemistry: false
+
+  solve_Tg: true
+  solve_Yg: true
+  solve_Tl: true
+  solve_Yl: false
+  include_Ts: true
+  include_mpp: true
+  include_Rd: true
+  stefan_velocity: true
+  species_convection: true
+
+  interface:
+    type: "no_condensation"
+    bc_mode: "equilibrium"
+    Ts_fixed: 300.0
+    equilibrium:
+      method: "raoult_psat"
+      psat_model: "coolprop"
+      condensables_gas: ["NC12H26"]
+      coolprop:
+        backend: "HEOS"
+        fluids: ["n-Dodecane"]
+
+species:
+  gas_balance_species: "N2"
+  gas_mechanism_phase: "gas"
+
+  liq_species: ["n-Dodecane"]
+  liq_balance_species: "n-Dodecane"
+
+  liq2gas_map:
+    n-Dodecane: "NC12H26"
+  mw_kg_per_mol:
+    n-Dodecane: 0.17034
+  molar_volume_cm3_per_mol:
+    n-Dodecane: 227.51
+
+geometry:
+  a0: 1.0e-4
+  R_inf: 5.0e-3
+  N_liq: 20
+  N_gas: 100
+  mesh:
+    method: "exp_power"
+    control: "iface_dr"
+    iface_dr: 2.0e-6
+    exp_power: 2.0
+    enforce_interface_continuity: true
+    continuity_tol: 1.0e-5
+
+time:
+  t0: 0.0
+  dt: 1.0e-7
+  t_end: 1.0e-5
+  max_steps: 100
+
+discretization:
+  time_scheme: "BE"
+  theta: 1.0
+  mass_matrix: "rhoVc_p"
+
+initial:
+  T_inf: 900.0
+  P_inf: 101325.0
+  T_d0: 300.0
+  Yg: {"N2": 0.79, "O2": 0.21}
+  Yl: {"n-Dodecane": 1.0}
+  Y_seed: 1.0e-12
+  t_init_T: 1.0e-6
+  Y_vap_if0: 1.0e-6
+
+transport:
+  D_l_const: 1.0e-9
+  D_l_species: {}
+
+nonlinear:
+  enabled: true
+  backend: "petsc_mpi"
+  solver: "newton_krylov"
+  krylov_method: "lgmres"
+  inner_maxiter: 30
+  max_outer_iter: 20
+  f_rtol: 1.0e-6
+  f_atol: 1.0e-8
+  use_scaled_unknowns: true
+  use_scaled_residual: false
+  residual_scale_floor: 1.0e-12
+  verbose: false
+  log_every: 10
+
+remap:
+  post_correct_interface: true
+  post_correct_tol: 1.0e-10
+  post_correct_rtol: 1.0e-3
+  post_correct_tol_skip_abs: 1.0e-8
+  post_correct_eps_rd_rel: 1.0e-6
+  post_correct_skip_if_uncovered_zero: true
+  post_correct_improve_min: 1.0e-3
+  post_correct_max_iter: 12
+  post_correct_damping: 0.7
+  post_correct_fd_eps_T: 1.0e-3
+  post_correct_fd_eps_m: 1.0e-6
+
+solver:
+  linear:
+    backend: "petsc"
+    assembly_mode: "bridge_dense"
+    pc_type: "fieldsplit"
+    fieldsplit:
+      type: "schur"
+      scheme: "bulk_iface"
+      schur_fact_type: "lower"
+      subsolvers:
+        bulk:
+          asm_sub_pc_type: "ilu"
+        iface:
+          asm_sub_pc_type: "ilu"
+
+petsc:
+  options_prefix: "p3acc_single_"
+  snes_type: "newtonls"
+  linesearch_type: "l2"
+  jacobian_mode: "mfpc_sparse_fd"
+  fd_eps: 1.0e-8
+  snes_monitor: false
+  precond_drop_tol: 0.0
+
+  ksp_type: "gmres"
+  pc_type: "fieldsplit"
+  rtol: 1.0e-8
+  atol: 1.0e-12
+  max_it: 50
+  restart: 30
+  monitor: false
+
+io:
+  write_every: 0
+  scalars_write_every: 1
+  formats: []
+  save_grid: false
+  fields:
+    scalars:
+      [
+        "step",
+        "t",
+        "Ts",
+        "Rd",
+        "mpp",
+        "mass_balance_rd",
+        "m_drop0",
+        "m_drop",
+        "m_evap_cum",
+        "mass_closure_err",
+      ]
+    gas: []
+    liquid: []
+    interface: []
+
+checks:
+  enforce_sumY: true
+  sumY_tol: 1.0e-10
+  clamp_negative_Y: true
+  min_Y: 0.0
+  enforce_T_bounds: true
+  T_min: 200.0
+  T_max: 4000.0
+  enforce_unique_index: true
+  enforce_grid_state_props_split: true
+  enforce_assembly_purity: true

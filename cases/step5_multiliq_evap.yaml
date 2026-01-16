@@ -1,0 +1,154 @@
+case:
+  id: step5_multiliq_evap
+  title: "Step5: multicomponent evaporation (n-Dodecane + n-Heptane)"
+  version: 1
+  notes: "No-chemistry, solve Tg/Yg/Tl/Yl with Ts/mpp/Rd. Starter run (short t_end)."
+
+paths:
+  output_root: "../out/step5"
+  case_dir: "../out/step5"
+  mechanism_dir: "../mechanism"
+  gas_mech: "mech.yaml"
+
+conventions:
+  radial_normal: "+er"
+  flux_sign: "outward_positive"
+  heat_flux_def: "q=-k*dTdr"
+  evap_sign: "mpp_positive_evaporation"
+  gas_closure_species: "N2"
+  index_source: "unknown_layout_only"
+  assembly_pure: true
+  grid_state_props_split: true
+
+physics:
+  model: "droplet_1d_spherical_noChem"
+  enable_liquid: true
+  include_chemistry: false
+
+  solve_Tg: true
+  solve_Yg: true
+  solve_Tl: true
+  solve_Yl: true
+  include_Ts: true
+  include_mpp: true
+  include_Rd: true
+  stefan_velocity: true
+  species_convection: true
+
+  interface:
+    type: "no_condensation"
+    bc_mode: "equilibrium"
+    Ts_fixed: 300.0
+    equilibrium:
+      method: "raoult_psat"
+      psat_model: "coolprop"
+      condensables_gas: ["NC12H26", "NC7H16"]
+      coolprop:
+        backend: "HEOS"
+        fluids: ["n-Dodecane", "n-Heptane"]
+
+species:
+  gas_balance_species: "N2"
+  gas_mechanism_phase: "gas"
+
+  liq_species: ["n-Dodecane", "n-Heptane"]
+  liq_balance_species: "n-Dodecane"
+
+  liq2gas_map:
+    n-Dodecane: "NC12H26"
+    n-Heptane: "NC7H16"
+  # Liquid molar masses (kg/mol); gas MW comes from Cantera.
+  mw_kg_per_mol:
+    n-Dodecane: 0.17034
+    n-Heptane: 0.10021
+  molar_volume_cm3_per_mol:
+    n-Dodecane: 227.51
+    n-Heptane: 146.5
+
+geometry:
+  a0: 1.0e-4
+  R_inf: 5.0e-3
+  N_liq: 6
+  N_gas: 40
+  mesh:
+    liq_method: "tanh"
+    liq_beta: 2.0
+    liq_center_bias: 0.4
+    gas_method: "tanh"
+    gas_beta: 2.0
+    gas_center_bias: -0.4
+    enforce_interface_continuity: true
+    continuity_tol: 1.0e-5
+
+time:
+  t0: 0.0
+  dt: 1.0e-7
+  t_end: 1.0e-6
+  max_steps: 10
+
+discretization:
+  time_scheme: "BE"
+  theta: 1.0
+  mass_matrix: "rhoVc_p"
+
+initial:
+  T_inf: 900.0
+  P_inf: 101325.0
+  T_d0: 300.0
+  Yg: {"N2": 0.79, "O2": 0.21}
+  Yl:
+    n-Dodecane: 0.5
+    n-Heptane: 0.5
+  Y_seed: 1.0e-12
+  Y_vap_if0: 1.0e-6
+
+transport:
+  D_l_const: 1.0e-9
+  D_l_species: {}
+
+nonlinear:
+  enabled: true
+  backend: "scipy"
+  solver: "newton_krylov"
+  krylov_method: "lgmres"
+  max_outer_iter: 200
+  inner_maxiter: 30
+  f_rtol: 1.0e-6
+  f_atol: 1.0e-8
+  use_scaled_unknowns: true
+  use_scaled_residual: false
+  verbose: true
+  log_every: 10
+
+petsc:
+  options_prefix: "droplet_"
+  ksp_type: "gmres"
+  pc_type: "ilu"
+  rtol: 1.0e-8
+  atol: 1.0e-12
+  max_it: 200
+  restart: 50
+  monitor: false
+
+io:
+  write_every: 0
+  scalars_write_every: 1
+  formats: []
+  save_grid: false
+  fields:
+    scalars:
+      ["t", "Ts", "mpp", "Rd", "Tg0", "Yg0_N2", "Yg0_O2", "Yg0_NC7H16", "Yg0_NC12H26"]
+    gas: ["Tg", "Yg"]
+    liquid: ["Tl", "Yl"]
+
+checks:
+  enforce_sumY: true
+  sumY_tol: 1.0e-10
+  clamp_negative_Y: true
+  min_Y: 0.0
+  enforce_T_bounds: true
+  T_min: 200.0
+  T_max: 4000.0
+  enforce_unique_index: true
+  enforce_grid_state_props_split: true
+  enforce_assembly_purity: true

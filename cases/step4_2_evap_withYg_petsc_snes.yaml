@@ -1,0 +1,156 @@
+case:
+  id: step4_2_evap_withYg_petsc_snes  # case id (string, used for output naming)
+  title: "Step4.2 PETSc SNES: evaporation with Yg solve"  # human-readable title
+  version: 1  # config schema version (int)
+  notes: "PETSc SNES backend; small grid for Stage S1.x validation."  # free-form notes
+
+paths:
+  output_root: "../out/step4_2_petsc"  # output root directory (relative or absolute)
+  case_dir: "../out/step4_2_petsc"  # case output directory (relative or absolute)
+  mechanism_dir: "../mechanism"  # directory containing mechanism files
+  gas_mech: "mech.yaml"  # gas mechanism file name or path
+
+conventions:
+  radial_normal: "+er"  # "+er" (outward) only
+  flux_sign: "outward_positive"  # "outward_positive" only
+  heat_flux_def: "q=-k*dTdr"  # heat flux definition (fixed)
+  evap_sign: "mpp_positive_evaporation"  # mpp sign convention
+  gas_closure_species: "N2"  # gas closure species name
+  index_source: "unknown_layout_only"  # index mapping source (project convention)
+  assembly_pure: true  # enforce assembly purity
+  grid_state_props_split: true  # enforce grid/state/props separation
+
+physics:
+  model: "droplet_1d_spherical_noChem"  # physics model identifier
+  enable_liquid: true  # must be true in this project
+  include_chemistry: false  # no chemistry in this stage
+
+  solve_Tg: true  # solve gas temperature
+  solve_Yg: true  # solve gas species mass fractions
+  solve_Tl: true  # solve liquid temperature
+  solve_Yl: false  # solve liquid species (false in this stage)
+  include_Ts: true  # include interface temperature unknown
+  include_mpp: true  # include interface mass flux unknown
+  include_Rd: true  # include droplet radius unknown
+  stefan_velocity: true  # enable Stefan flow in gas
+  species_convection: true  # enable species convection in gas
+
+  interface:
+    type: "no_condensation"  # options: "no_condensation"
+    bc_mode: "equilibrium"  # options: "equilibrium" | "Ts_fixed"
+    Ts_fixed: 300.0  # fixed Ts [K] when bc_mode="Ts_fixed"
+    equilibrium:
+      method: "raoult_psat"  # options: "raoult_psat"
+      psat_model: "coolprop"  # options: "coolprop"
+      condensables_gas: ["NC12H26"]  # condensable gas species (mechanism names)
+      coolprop:
+        backend: "HEOS"  # CoolProp backend (e.g., HEOS)
+        fluids: ["n-Dodecane"]  # CoolProp fluid names
+
+species:
+  gas_balance_species: "N2"  # gas closure species name
+  gas_mechanism_phase: "gas"  # Cantera phase name
+
+  liq_species: ["n-Dodecane"]  # liquid species list
+  liq_balance_species: "n-Dodecane"  # liquid closure species
+
+  liq2gas_map:
+    n-Dodecane: "NC12H26"  # liquid->gas species mapping
+  mw_kg_per_mol:
+    n-Dodecane: 0.17034  # liquid molar mass [kg/mol]
+  molar_volume_cm3_per_mol:
+    n-Dodecane: 227.51  # liquid molar volume [cm^3/mol]
+
+geometry:
+  a0: 1.0e-4  # initial droplet radius [m]
+  R_inf: 5.0e-3  # far-field radius [m]
+  N_liq: 15  # number of liquid cells (small for SNES test)
+  N_gas: 100  # number of gas cells (small for SNES test)
+  mesh:
+    liq_method: "tanh"  # options: "tanh"
+    liq_beta: 2.0  # tanh stretching strength (liquid)
+    liq_center_bias: 0.4  # tanh bias (liquid)
+    gas_method: "tanh"  # options: "tanh"
+    gas_beta: 2.0  # tanh stretching strength (gas)
+    gas_center_bias: -0.4  # tanh bias (gas)
+    enforce_interface_continuity: false  # enforce dr continuity at interface
+    continuity_tol: 1.0e-5  # tolerance for continuity check
+
+time:
+  t0: 0.0  # initial time [s]
+  dt: 1.0e-7  # time step [s]
+  t_end: 1.0e-5  # end time [s]
+  max_steps: 100  # optional cap on steps
+
+discretization:
+  time_scheme: "BE"  # options: "BE"
+  theta: 1.0  # theta-scheme parameter (1.0 = implicit)
+  mass_matrix: "rhoVc_p"  # mass matrix form
+
+initial:
+  T_inf: 900.0  # far-field temperature [K]
+  P_inf: 101325.0  # far-field pressure [Pa]
+  T_d0: 300.0  # initial droplet temperature [K]
+  Yg: {"N2": 0.79, "O2": 0.21}  # far-field gas composition
+  Yl: {"n-Dodecane": 1.0}  # initial liquid composition
+  Y_seed: 1.0e-12  # seed mass fraction for missing species
+  t_init_T: 1.0e-6  # init profile time scale [s]
+  Y_vap_if0: 1.0e-6  # initial vapor at interface (if used)
+
+transport:
+  D_l_const: 1.0e-9  # default liquid diffusivity [m^2/s]
+  D_l_species: {}  # per-species liquid diffusivity overrides
+
+nonlinear:
+  enabled: true  # enable global nonlinear solve
+  backend: "petsc"  # options: "scipy" | "petsc" | "snes" | "petsc_snes"
+  solver: "newton_krylov"  # SciPy-only (ignored by PETSc backend)
+  krylov_method: "lgmres"  # SciPy-only Krylov method
+  max_outer_iter: 20  # SNES/Newton max outer iterations
+  inner_maxiter: 30  # SciPy inner Krylov max iterations
+  f_rtol: 1.0e-6  # nonlinear relative tolerance
+  f_atol: 1.0e-10  # nonlinear absolute tolerance
+  use_scaled_unknowns: true  # scale unknowns by layout scales
+  use_scaled_residual: false  # scale residuals by block norms (false is often more robust)
+  residual_scale_floor: 1.0e-12  # minimum residual scale
+  verbose: false  # verbose nonlinear logging
+  log_every: 5  # log every N iterations
+
+petsc:
+  options_prefix: ""  # PETSc options prefix ("" for none)
+  snes_type: "newtonls"  # SNES type: newtonls | newtontr | ngmres ...
+  linesearch_type: "l2"  # line search: bt | l2 | cp | nleqerr ...
+  jacobian_mode: "fd"  # Jacobian: fd | mf
+  fd_eps: 1.0e-6  # finite-difference step size
+  snes_monitor: false  # enable SNES monitor callback
+
+  ksp_type: "preonly"  # KSP type: preonly | gmres | fgmres | lgmres ...
+  pc_type: "lu"  # PC type: lu | ilu | jacobi | none ...
+  rtol: 1.0e-8  # KSP relative tolerance
+  atol: 1.0e-12  # KSP absolute tolerance
+  max_it: 1  # KSP max iterations
+  restart: 30  # GMRES restart length
+  monitor: false  # enable KSP monitor callback
+
+io:
+  write_every: 1000000000  # write interval (large to disable)
+  formats: []  # output formats list
+  save_grid: false  # save grid to output
+  fields:
+    scalars: []  # scalar fields to output
+    gas: []  # gas fields to output
+    liquid: []  # liquid fields to output
+    interface: []  # interface fields to output
+  scalars_write_every: 1000000000  # scalars write interval
+
+checks:
+  enforce_sumY: true  # enforce mass fraction sum to 1
+  sumY_tol: 1.0e-10  # tolerance for sum(Y)
+  clamp_negative_Y: true  # clamp negative Y to min_Y
+  min_Y: 0.0  # minimum allowed Y
+  enforce_T_bounds: true  # enforce temperature bounds
+  T_min: 200.0  # minimum temperature [K]
+  T_max: 4000.0  # maximum temperature [K]
+  enforce_unique_index: true  # enforce unique indices in layout
+  enforce_grid_state_props_split: true  # enforce separation checks
+  enforce_assembly_purity: true  # enforce assembly purity checks
