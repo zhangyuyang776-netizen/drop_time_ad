@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import warnings
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -87,7 +87,7 @@ class EquilibriumResult:
     y_bg_total: float          # total mole fraction allocated to background gases
     X_bg_norm: np.ndarray      # (Ns_g,) normalized background mole fractions (source)
     mask_bg: np.ndarray        # (Ns_g,) True for background (non-condensable) species
-    meta: Dict[str, any] = field(default_factory=dict)  # P0.1: source tracking metadata
+    meta: Dict[str, Any] = field(default_factory=dict)  # P0.1: source tracking metadata
 
 
 def _psat_coolprop_single(fluid_label: str, T: float) -> Optional[float]:

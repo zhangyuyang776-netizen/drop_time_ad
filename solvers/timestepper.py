@@ -373,6 +373,7 @@ def _advance_one_step_nonlinear_scipy(
             }
         except Exception:
             pass
+        _write_interface_diag_safe(cfg=cfg, diag=diag)  # P0.3: Write diag for nonlinear failure
         return StepResult(
             state_new=state_old,
             props_new=props_old,
