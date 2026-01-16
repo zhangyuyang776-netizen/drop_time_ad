@@ -729,3 +729,100 @@ def write_step_spatial(cfg: CaseConfig, grid: Grid1D, state: State, step_id: int
         data[name] = np.asarray(getattr(state, name))
 
     np.savez(out_path, **data)
+
+
+# ============================================================================
+# P0.2: Interface diagnostics CSV output
+# ============================================================================
+
+_INTERFACE_DIAG_FIELDS = [
+    "step",
+    "t",
+    "dt",
+    "Ts",
+    "Rd",
+    "mpp",
+    "m_dot",
+    "psat",
+    "sum_y_cond",
+    "eq_source",
+    "eq_exc_type",
+    "eq_exc_msg",
+]
+
+
+def write_interface_diag(cfg: CaseConfig, diag: "StepDiagnostics") -> None:
+    """
+    Write interface diagnostics to interface_diag.csv (rank0 only, append mode).
+
+    P0.2: This function extracts interface_diag dict from diag.extra and writes
+    one row per timestep to interface_diag.csv in the case directory.
+
+    The CSV includes:
+    - step: auto-incremented step counter (using _interface_diag_index.txt)
+    - t, dt: time and timestep
+    - Ts, Rd, mpp, m_dot: interface state variables
+    - psat, sum_y_cond: equilibrium diagnostics
+    - eq_source, eq_exc_type, eq_exc_msg: equilibrium computation status
+
+    Only writes on rank0 (checked via is_root_rank).
+    """
+    # Check if we're on rank0
+    try:
+        from core.logging_utils import is_root_rank
+
+        if not is_root_rank():
+            return
+    except Exception:
+        pass  # If import fails, assume rank0 and proceed
+
+    # Extract interface_diag from diag.extra
+    try:
+        interface_diag = diag.extra.get("interface_diag")
+        if interface_diag is None:
+            return  # No interface_diag data, skip
+    except Exception:
+        return
+
+    # Determine output path
+    try:
+        case_dir = Path(cfg.paths.case_dir) if hasattr(cfg, "paths") else Path(".")
+    except Exception:
+        case_dir = Path(".")
+
+    out_path = case_dir / "interface_diag.csv"
+
+    # Get or increment step counter (using persistent file)
+    counter_path = case_dir / "_interface_diag_index.txt"
+    try:
+        step = int(counter_path.read_text().strip())
+    except (FileNotFoundError, ValueError):
+        step = 0
+    counter_path.write_text(str(step + 1))
+
+    # Prepare row data
+    row = {
+        "step": step,
+        "t": interface_diag.get("t", ""),
+        "dt": interface_diag.get("dt", ""),
+        "Ts": interface_diag.get("Ts", ""),
+        "Rd": interface_diag.get("Rd", ""),
+        "mpp": interface_diag.get("mpp", ""),
+        "m_dot": interface_diag.get("m_dot", ""),
+        "psat": interface_diag.get("psat", ""),
+        "sum_y_cond": interface_diag.get("sum_y_cond", ""),
+        "eq_source": interface_diag.get("eq_source", ""),
+        "eq_exc_type": interface_diag.get("eq_exc_type", ""),
+        "eq_exc_msg": interface_diag.get("eq_exc_msg", ""),
+    }
+
+    # Write to CSV (append mode, write header if new file)
+    is_new = not out_path.exists()
+    try:
+        with out_path.open("a", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=_INTERFACE_DIAG_FIELDS)
+            if is_new:
+                writer.writeheader()
+            writer.writerow(row)
+    except Exception as exc:
+        logger.warning("write_interface_diag failed: %s", exc)

@@ -18,6 +18,7 @@ from typing import Any, Dict, Optional, Tuple
 import numpy as np
 
 from assembly.build_system_SciPy import build_transport_system
+from core.logging_utils import is_root_rank
 from properties.compute_props import compute_props, get_or_build_models
 from properties.equilibrium import build_equilibrium_model, compute_interface_equilibrium
 from solvers.nonlinear_context import NonlinearContext
@@ -226,6 +227,13 @@ def build_transport_system_from_ctx(
     if needs_eq:
         cache = ctx.meta.get("eq_result_cache")
         eq_model = _get_or_build_eq_model(ctx, state_guess)
+        # Initialize variables for diagnostic logging (avoid UnboundLocalError in exception handler)
+        Ts_if = float("nan")
+        Pg_if = float(getattr(cfg.initial, "P_inf", 101325.0))
+        y_cond_sum = float("nan")
+        psat_val = float("nan")
+        Yl_shape = None
+        Yg_shape = None
         try:
             il_if = grid.Nl - 1
             ig_if = 0
@@ -233,6 +241,8 @@ def build_transport_system_from_ctx(
             Pg_if = float(getattr(cfg.initial, "P_inf", 101325.0))
             Yl_face = np.asarray(state_props.Yl[:, il_if], dtype=np.float64)
             Yg_face = np.asarray(state_props.Yg[:, ig_if], dtype=np.float64)
+            Yl_shape = tuple(Yl_face.shape)
+            Yg_shape = tuple(Yg_face.shape)
             Yg_eq, y_cond, psat = compute_interface_equilibrium(
                 eq_model,
                 Ts=Ts_if,
@@ -241,8 +251,30 @@ def build_transport_system_from_ctx(
                 Yg_face=Yg_face,
             )
             eq_result = {"Yg_eq": np.asarray(Yg_eq), "y_cond": np.asarray(y_cond), "psat": np.asarray(psat)}
+            # Extract diagnostics from successful computation
+            y_cond_sum = float(np.sum(y_cond))
+            psat_val = float(np.asarray(psat).reshape(-1)[0]) if np.size(psat) > 0 else float("nan")
             ctx.meta["eq_result_cache"] = dict(eq_result)
         except Exception as exc:
+            exc_type = type(exc).__name__
+            exc_msg = str(exc)
+            # P0.1: Enhanced structured logging for eq failure (rank0 only)
+            if is_root_rank() and cache is not None:
+                logger.warning(
+                    "eq_fail step=%s t=%s Ts_if=%.6g Pg_if=%.6g Yl_shape=%s Yg_shape=%s "
+                    "y_cond_sum=%.6g psat=%.6g eq_source=%s exc=%s: %s",
+                    getattr(ctx, "step", "NA"),
+                    getattr(ctx, "t_old", "NA"),
+                    Ts_if,
+                    Pg_if,
+                    Yl_shape,
+                    Yg_shape,
+                    y_cond_sum,
+                    psat_val,
+                    "cached",
+                    exc_type,
+                    exc_msg,
+                )
             if cache is not None:
                 logger.warning("compute_interface_equilibrium failed; using cached eq_result: %s", exc)
                 eq_result = cache
@@ -421,6 +453,13 @@ def build_global_residual(
     if needs_eq:
         cache = ctx.meta.get("eq_result_cache")
         eq_model = _get_or_build_eq_model(ctx, state_guess)
+        # Initialize variables for diagnostic logging (avoid UnboundLocalError in exception handler)
+        Ts_if = float("nan")
+        Pg_if = float(getattr(cfg.initial, "P_inf", 101325.0))
+        y_cond_sum = float("nan")
+        psat_val = float("nan")
+        Yl_shape = None
+        Yg_shape = None
         try:
             il_if = grid.Nl - 1
             ig_if = 0
@@ -428,6 +467,8 @@ def build_global_residual(
             Pg_if = float(getattr(cfg.initial, "P_inf", 101325.0))
             Yl_face = np.asarray(state_props.Yl[:, il_if], dtype=np.float64)
             Yg_face = np.asarray(state_props.Yg[:, ig_if], dtype=np.float64)
+            Yl_shape = tuple(Yl_face.shape)
+            Yg_shape = tuple(Yg_face.shape)
             Yg_eq, y_cond, psat = compute_interface_equilibrium(
                 eq_model,
                 Ts=Ts_if,
@@ -436,9 +477,31 @@ def build_global_residual(
                 Yg_face=Yg_face,
             )
             eq_result = {"Yg_eq": np.asarray(Yg_eq), "y_cond": np.asarray(y_cond), "psat": np.asarray(psat)}
+            # Extract diagnostics from successful computation
+            y_cond_sum = float(np.sum(y_cond))
+            psat_val = float(np.asarray(psat).reshape(-1)[0]) if np.size(psat) > 0 else float("nan")
             eq_source = "computed"
             ctx.meta["eq_result_cache"] = dict(eq_result)
         except Exception as exc:
+            exc_type = type(exc).__name__
+            exc_msg = str(exc)
+            # P0.1: Enhanced structured logging for eq failure (rank0 only)
+            if is_root_rank() and cache is not None:
+                logger.warning(
+                    "eq_fail step=%s t=%s Ts_if=%.6g Pg_if=%.6g Yl_shape=%s Yg_shape=%s "
+                    "y_cond_sum=%.6g psat=%.6g eq_source=%s exc=%s: %s",
+                    getattr(ctx, "step", "NA"),
+                    getattr(ctx, "t_old", "NA"),
+                    Ts_if,
+                    Pg_if,
+                    Yl_shape,
+                    Yg_shape,
+                    y_cond_sum,
+                    psat_val,
+                    "cached",
+                    exc_type,
+                    exc_msg,
+                )
             if cache is not None:
                 logger.warning("compute_interface_equilibrium failed; using cached eq_result: %s", exc)
                 eq_result = cache

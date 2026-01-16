@@ -292,6 +292,7 @@ def advance_one_step_scipy(
         )
 
     _write_step_scalars_safe(cfg=cfg, t=t_new, state=state_new, diag=diag)
+    _write_interface_diag_safe(cfg=cfg, diag=diag)
 
     return StepResult(
         state_new=state_new,
@@ -517,6 +518,7 @@ def _advance_one_step_nonlinear_scipy(
         )
 
     _write_step_scalars_safe(cfg=cfg, t=t_new, state=state_new, diag=diag)
+    _write_interface_diag_safe(cfg=cfg, diag=diag)
 
     return StepResult(
         state_new=state_new,
@@ -715,6 +717,48 @@ def _build_step_diagnostics(
             "condensable_if_cell": cond_val,
         }
 
+    # P0.2: Construct interface_diag dict for interface_diag.csv output
+    interface_diag = {
+        "t": t_new,
+        "dt": dt,
+        "Ts": float(state_new.Ts),
+        "Rd": float(state_new.Rd),
+        "mpp": float(state_new.mpp),
+        "m_dot": float("nan"),  # Will be computed below
+        "psat": float("nan"),
+        "sum_y_cond": float("nan"),
+        "eq_source": "none",
+        "eq_exc_type": "",
+        "eq_exc_msg": "",
+    }
+
+    # Compute m_dot = 4*pi*Rd^2*mpp
+    try:
+        Rd_val = float(state_new.Rd)
+        mpp_val = float(state_new.mpp)
+        if np.isfinite(Rd_val) and np.isfinite(mpp_val):
+            interface_diag["m_dot"] = 4.0 * np.pi * (Rd_val ** 2) * mpp_val
+    except Exception:
+        pass
+
+    # Try to build equilibrium result and extract psat/sum_y_cond
+    if cfg.physics.include_mpp and layout.has_block("mpp"):
+        try:
+            eq = _build_eq_result_for_step(cfg, grid, state_new, props=None)
+            psat_arr = np.asarray(eq.get("psat", []))
+            y_cond_arr = np.asarray(eq.get("y_cond", []))
+            if psat_arr.size > 0:
+                interface_diag["psat"] = float(psat_arr.reshape(-1)[0])
+            if y_cond_arr.size > 0:
+                interface_diag["sum_y_cond"] = float(np.sum(y_cond_arr))
+            interface_diag["eq_source"] = "computed"
+        except Exception as exc:
+            interface_diag["eq_source"] = "failed"
+            interface_diag["eq_exc_type"] = type(exc).__name__
+            interface_diag["eq_exc_msg"] = str(exc)
+
+    extra["interface_diag"] = interface_diag
+
     return StepDiagnostics(
         t_old=t_old,
         t_new=t_new,
@@ -899,6 +943,32 @@ def _write_step_scalars_safe(cfg: CaseConfig, t: float, state: State, diag: Step
         write_fn(cfg=cfg, t=t, state=state, diag=diag)
     except Exception as exc:
         logger.warning("write_step_scalars failed: %s", exc)
+
+
+def _write_interface_diag_safe(cfg: CaseConfig, diag: StepDiagnostics) -> None:
+    """
+    Safely load and call write_interface_diag without importing stdlib io module.
+    Uses the same cached dynamic import as _write_step_scalars_safe.
+
+    P0.2: This writes interface_diag.csv with one row per timestep containing
+    interface equilibrium diagnostics and state variables.
+    """
+    try:
+        module = sys.modules.get(_WRITERS_MODULE_NAME)
+        if module is None:
+            path = Path(__file__).resolve().parent.parent / "io" / "writers.py"
+            spec = importlib.util.spec_from_file_location(_WRITERS_MODULE_NAME, path)
+            if spec is None or spec.loader is None:
+                raise ImportError(f"Cannot load writers module from {path}")
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[_WRITERS_MODULE_NAME] = module
+            spec.loader.exec_module(module)  # type: ignore[arg-type]
+        write_fn = getattr(module, "write_interface_diag", None)
+        if write_fn is None:
+            raise AttributeError("write_interface_diag not found in writers module")
+        write_fn(cfg=cfg, diag=diag)
+    except Exception as exc:
+        logger.warning("write_interface_diag failed: %s", exc)
 
 
 def _build_eq_result_for_step(
