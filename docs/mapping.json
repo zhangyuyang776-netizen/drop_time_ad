@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "endianness": "little",
+  "dtype": "float64",
+  "ordering": "C",
+  "total_size": 423,
+  "blocks": [
+    {
+      "name": "Tg",
+      "offset": 0,
+      "size": 100,
+      "shape": [
+        100
+      ]
+    },
+    {
+      "name": "Yg",
+      "offset": 100,
+      "size": 300,
+      "shape": [
+        3,
+        100
+      ]
+    },
+    {
+      "name": "Tl",
+      "offset": 400,
+      "size": 20,
+      "shape": [
+        20
+      ]
+    },
+    {
+      "name": "Ts",
+      "offset": 420,
+      "size": 1,
+      "shape": [
+        1
+      ],
+      "optional": true
+    },
+    {
+      "name": "mpp",
+      "offset": 421,
+      "size": 1,
+      "shape": [
+        1
+      ],
+      "optional": true
+    },
+    {
+      "name": "Rd",
+      "offset": 422,
+      "size": 1,
+      "shape": [
+        1
+      ],
+      "optional": true
+    }
+  ],
+  "meta": {
+    "Ng": 100,
+    "Nl": 20,
+    "Ns_g_full": 4,
+    "Ns_g_eff": 3,
+    "Ns_l_full": 1,
+    "Ns_l_eff": 0,
+    "species_g_full": [
+      "N2",
+      "O2",
+      "NC7H16",
+      "NC12H26"
+    ],
+    "species_g_reduced": [
+      "O2",
+      "NC7H16",
+      "NC12H26"
+    ],
+    "species_g_closure": "N2",
+    "species_l_full": [
+      "n-Dodecane"
+    ],
+    "species_l_reduced": [],
+    "species_l_closure": "n-Dodecane"
+  }
+}
