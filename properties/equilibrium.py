@@ -26,6 +26,16 @@ FloatArray = np.ndarray
 EPS = 1e-30
 
 
+class InterfaceEquilibriumError(RuntimeError):
+    """
+    Exception raised when interface equilibrium computation fails.
+
+    P1: This exception is raised to implement fail-fast behavior,
+    preventing NaN propagation when equilibrium calculation fails.
+    """
+    pass
+
+
 def mass_to_mole(Y: FloatArray, M: FloatArray) -> FloatArray:
     """Convert mass fractions to mole fractions."""
     Y = np.asarray(Y, dtype=np.float64)

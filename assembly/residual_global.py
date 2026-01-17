@@ -20,7 +20,11 @@ import numpy as np
 from assembly.build_system_SciPy import build_transport_system
 from core.logging_utils import is_root_rank
 from properties.compute_props import compute_props, get_or_build_models
-from properties.equilibrium import build_equilibrium_model, compute_interface_equilibrium
+from properties.equilibrium import (
+    InterfaceEquilibriumError,
+    build_equilibrium_model,
+    compute_interface_equilibrium,
+)
 from solvers.nonlinear_context import NonlinearContext
 
 logger = logging.getLogger(__name__)
@@ -300,28 +304,12 @@ def build_transport_system_from_ctx(
         except Exception as exc:
             exc_type = type(exc).__name__
             exc_msg = str(exc)
-            # P0.1: Enhanced structured logging for eq failure (rank0 only)
-            if is_root_rank() and cache is not None:
-                logger.warning(
-                    "eq_fail step=%s t=%s Ts_if=%.6g Pg_if=%.6g Yl_shape=%s Yg_shape=%s "
-                    "y_cond_sum=%.6g psat=%.6g eq_source=%s exc=%s: %s",
-                    getattr(ctx, "step", "NA"),
-                    getattr(ctx, "t_old", "NA"),
-                    Ts_if,
-                    Pg_if,
-                    Yl_shape,
-                    Yg_shape,
-                    y_cond_sum,
-                    psat_val,
-                    "cached",
-                    exc_type,
-                    exc_msg,
-                )
-            if cache is not None:
-                logger.warning("compute_interface_equilibrium failed; using cached eq_result: %s", exc)
-                eq_result = cache
-            else:
-                raise
+            # P1: Record failure reason to ctx.meta
+            ctx.meta["eq_last_error"] = f"{exc_type}: {exc_msg}"
+            # P1: Fail-fast - no cache fallback
+            raise InterfaceEquilibriumError(
+                f"compute_interface_equilibrium failed at Ts={Ts_if:.6g}, Pg={Pg_if:.6g}"
+            ) from exc
 
     result = build_transport_system(
         cfg=cfg,
@@ -569,29 +557,12 @@ def build_global_residual(
         except Exception as exc:
             exc_type = type(exc).__name__
             exc_msg = str(exc)
-            # P0.1: Enhanced structured logging for eq failure (rank0 only)
-            if is_root_rank() and cache is not None:
-                logger.warning(
-                    "eq_fail step=%s t=%s Ts_if=%.6g Pg_if=%.6g Yl_shape=%s Yg_shape=%s "
-                    "y_cond_sum=%.6g psat=%.6g eq_source=%s exc=%s: %s",
-                    getattr(ctx, "step", "NA"),
-                    getattr(ctx, "t_old", "NA"),
-                    Ts_if,
-                    Pg_if,
-                    Yl_shape,
-                    Yg_shape,
-                    y_cond_sum,
-                    psat_val,
-                    "cached",
-                    exc_type,
-                    exc_msg,
-                )
-            if cache is not None:
-                logger.warning("compute_interface_equilibrium failed; using cached eq_result: %s", exc)
-                eq_result = cache
-                eq_source = "cached"
-            else:
-                raise
+            # P1: Record failure reason to ctx.meta
+            ctx.meta["eq_last_error"] = f"{exc_type}: {exc_msg}"
+            # P1: Fail-fast - no cache fallback
+            raise InterfaceEquilibriumError(
+                f"compute_interface_equilibrium failed at Ts={Ts_if:.6g}, Pg={Pg_if:.6g}"
+            ) from exc
     else:
         eq_source = "disabled"
 

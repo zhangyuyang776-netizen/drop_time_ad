@@ -10,8 +10,9 @@ from typing import Any, Dict, Optional, Tuple
 
 import numpy as np
 
-from solvers.nonlinear_context import NonlinearContext
 from parallel.mpi_bootstrap import bootstrap_mpi_before_petsc
+from properties.equilibrium import InterfaceEquilibriumError
+from solvers.nonlinear_context import NonlinearContext
 
 
 def _get_linear_assembly_mode(ctx: NonlinearContext) -> str:
@@ -86,15 +87,37 @@ def _build_state_props_eq(
                 Yl_face=Yl_face,
                 Yg_face=Yg_face,
             )
-            eq_result = {"Yg_eq": np.asarray(Yg_eq), "y_cond": np.asarray(y_cond), "psat": np.asarray(psat)}
+
+            # P1: Non-finite sentinel - fail-fast to prevent NaN propagation
+            Yg_eq_arr = np.asarray(Yg_eq, dtype=np.float64)
+            y_cond_arr = np.asarray(y_cond, dtype=np.float64)
+            psat_arr = np.asarray(psat, dtype=np.float64)
+
+            if not np.all(np.isfinite(Yg_eq_arr)):
+                raise InterfaceEquilibriumError(
+                    f"equilibrium returned non-finite Yg_eq: Ts={Ts_if:.6g}, Pg={Pg_if:.6g}"
+                )
+            if not np.all(np.isfinite(y_cond_arr)):
+                raise InterfaceEquilibriumError(
+                    f"equilibrium returned non-finite y_cond: Ts={Ts_if:.6g}, Pg={Pg_if:.6g}, sum(y_cond)={float(np.sum(y_cond_arr)):.6g}"
+                )
+            if not np.all(np.isfinite(psat_arr)):
+                raise InterfaceEquilibriumError(
+                    f"equilibrium returned non-finite psat: Ts={Ts_if:.6g}, Pg={Pg_if:.6g}, psat={psat_arr}"
+                )
+
+            eq_result = {"Yg_eq": Yg_eq_arr, "y_cond": y_cond_arr, "psat": psat_arr}
             eq_source = "computed"
             ctx.meta["eq_result_cache"] = dict(eq_result)
-        except Exception:
-            if cache is not None:
-                eq_result = cache
-                eq_source = "cached"
-            else:
-                raise
+        except Exception as exc:
+            exc_type = type(exc).__name__
+            exc_msg = str(exc)
+            # P1: Record failure reason to ctx.meta
+            ctx.meta["eq_last_error"] = f"{exc_type}: {exc_msg}"
+            # P1: Fail-fast - no cache fallback
+            raise InterfaceEquilibriumError(
+                f"compute_interface_equilibrium failed at Ts={Ts_if:.6g}, Pg={Pg_if:.6g}"
+            ) from exc
 
     diag["eq_source"] = eq_source
     return state_guess, props, eq_model, eq_result, diag
