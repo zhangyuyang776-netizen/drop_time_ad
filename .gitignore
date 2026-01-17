@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# Unit test / coverage
+.coverage
+.pytest_cache/
+htmlcov/
+
+# Environments
+.env
+.venv
+env/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Output directories (adjust based on your needs)
+out/
+*.log
+*.npz
+*.csv
+*.json
+!cases/*.json
+!mechanism/*.json
+
+# Temporary files
+*.tmp
+*.bak
