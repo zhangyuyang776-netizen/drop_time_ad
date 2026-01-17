@@ -697,6 +697,17 @@ def _reconstruct_closure(
         # After clamping, verify no catastrophic errors remain
         if np.any(~np.isfinite(closure)):
             raise ValueError(f"{phase} closure species contains non-finite values")
+
+        # Assign clipped closure back to Y_full
+        Y_full[closure_idx, :] = closure
+
+        # Renormalize to enforce sum(Y) = 1.0 after clipping
+        # This is necessary because clipping can break the sum constraint
+        # (e.g., if sum_other=1.05, closure gets clipped to 0, sum(Y)=1.05 != 1.0)
+        sums = np.sum(Y_full, axis=0)
+        mask = sums > 1e-14
+        if np.any(mask):
+            Y_full[:, mask] /= sums[np.newaxis, mask]
     else:
         # Strict checking without clamping
         if np.any(closure < -tol):
@@ -708,7 +719,7 @@ def _reconstruct_closure(
                 f"{phase} closure species exceeds 1 beyond tol={tol}: max={float(np.max(closure)):.3e}"
             )
 
-    Y_full[closure_idx, :] = closure
+        Y_full[closure_idx, :] = closure
 
 
 def apply_u_to_state(
