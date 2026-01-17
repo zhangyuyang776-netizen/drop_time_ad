@@ -819,6 +819,11 @@ def write_interface_diag(cfg: CaseConfig, diag: "StepDiagnostics") -> None:
         "eq_source": interface_diag.get("eq_source", ""),
         "eq_exc_type": interface_diag.get("eq_exc_type", ""),
         "eq_exc_msg": interface_diag.get("eq_exc_msg", ""),
+        # P0.1: New diagnostic fields
+        "psat_source": interface_diag.get("psat_source", ""),
+        "hvap_source": interface_diag.get("hvap_source", ""),
+        "fallback_reason": interface_diag.get("fallback_reason", ""),
+        "finite_ok": interface_diag.get("finite_ok", ""),
     }
 
     # Write to CSV (append mode, write header if new file)

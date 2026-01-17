@@ -763,18 +763,10 @@ def _build_step_diagnostics(
             interface_diag["eq_source"] = "computed"
             # P0.1: Extract meta tracking info
             meta = eq.get("meta", {})
-            # DEBUG: Temporarily log meta extraction (rank0 only)
-            try:
-                from core.logging_utils import is_root_rank
-                if is_root_rank():
-                    logger.error("P0_DEBUG step: eq keys=%s, meta type=%s, meta=%s",
-                                list(eq.keys()), type(meta).__name__, meta)
-            except Exception:
-                pass
-            interface_diag["psat_source"] = meta.get("psat_source", "MISSING_KEY")
-            interface_diag["hvap_source"] = meta.get("hvap_source", "MISSING_KEY")
-            interface_diag["fallback_reason"] = meta.get("fallback_reason", "MISSING_KEY")
-            interface_diag["finite_ok"] = str(meta.get("finite_ok", "MISSING_KEY"))
+            interface_diag["psat_source"] = meta.get("psat_source", "")
+            interface_diag["hvap_source"] = meta.get("hvap_source", "")
+            interface_diag["fallback_reason"] = meta.get("fallback_reason", "")
+            interface_diag["finite_ok"] = str(meta.get("finite_ok", ""))
         except Exception as exc:
             interface_diag["eq_source"] = "failed"
             interface_diag["eq_exc_type"] = type(exc).__name__
