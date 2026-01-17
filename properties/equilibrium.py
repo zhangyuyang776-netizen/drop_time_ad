@@ -282,7 +282,7 @@ def compute_interface_equilibrium_full(
     4) Raoult partial pressures for condensables (with NaN/neg guards).
      5) cap total condensable partial pressure to 0.995*Pg.
      6) condensable gas mole fractions.
-     7) choose background source mole fractions from interface gas; normalize on background set.
+     7) choose background source mole fractions from farfield (not interface) to preserve species ratios.
      8) allocate background total fraction = 1 - sum(y_cond).
      9) assemble full gas mole fractions; clip/optional renorm for numerical noise.
      10) convert mole -> mass fractions for gas.
@@ -325,8 +325,11 @@ def compute_interface_equilibrium_full(
     mask_bg = np.ones(Ns_g, dtype=bool)
     mask_bg[idxG] = False
 
-    X_g_face = mass_to_mole(Yg_face, model.M_g)
-    X_source = X_g_face
+    # Use farfield composition for background species ratio (not interface composition)
+    # This prevents closure species (e.g., N2) from being incorrectly compressed to zero
+    # when condensable species (e.g., NC12H26) becomes large at the interface.
+    # Interface composition may have closure species artificially set to ~0 after reconstruction.
+    X_source = model.Xg_farfield
 
     X_bg = np.where(mask_bg, X_source, 0.0)
     s_bg = float(np.sum(X_bg))

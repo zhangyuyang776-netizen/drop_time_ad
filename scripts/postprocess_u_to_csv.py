@@ -174,6 +174,13 @@ def reconstruct_full_Y(
         # Clamp to [0, 1]
         Y_full[i_closure, :] = np.clip(Y_full[i_closure, :], 0.0, 1.0)
 
+        # Renormalize to enforce sum(Y) = 1.0 after clipping
+        # Clipping can break the sum constraint (e.g., if sum_other>1, closure clips to 0)
+        sums = np.sum(Y_full, axis=0)
+        mask = sums > 1e-14
+        if np.any(mask):
+            Y_full[:, mask] /= sums[mask]
+
     return Y_full
 
 
