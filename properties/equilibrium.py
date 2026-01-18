@@ -27,6 +27,37 @@ EPS = 1e-30
 EPS_BG = 1e-5  # P2: Minimum background gas mole fraction (boiling guard)
 
 
+def _apply_boiling_guard(y_cond: np.ndarray, eps_bg: float = EPS_BG) -> Tuple[np.ndarray, bool, float]:
+    """
+    Apply boiling guard to condensable mole fractions (pure function for testing).
+
+    P2: Ensures background species have minimum mole fraction by scaling condensables.
+
+    Args:
+        y_cond: Condensable mole fractions (will be copied, not modified in-place)
+        eps_bg: Minimum background mole fraction (default: EPS_BG)
+
+    Returns:
+        (y_cond_new, ys_cap_hit, y_bg_total):
+            - y_cond_new: Scaled condensable mole fractions
+            - ys_cap_hit: True if guard was triggered
+            - y_bg_total: Resulting background total mole fraction
+    """
+    y_cond = np.asarray(y_cond, dtype=np.float64).copy()
+    y_cond_sum = float(np.sum(y_cond))
+    ys_cap_hit = False
+
+    if y_cond_sum > 1.0 - eps_bg:
+        # Scale condensables to leave minimum background fraction
+        scale = (1.0 - eps_bg) / max(y_cond_sum, 1e-300)
+        y_cond *= scale
+        y_cond_sum = float(np.sum(y_cond))
+        ys_cap_hit = True
+
+    y_bg_total = max(1.0 - y_cond_sum, 0.0)
+    return y_cond, ys_cap_hit, y_bg_total
+
+
 class InterfaceEquilibriumError(RuntimeError):
     """
     Exception raised when interface equilibrium computation fails.
@@ -336,14 +367,8 @@ def compute_interface_equilibrium_full(
     y_cond = p_partial / Pg_safe if idxG.size else np.zeros(0, dtype=np.float64)
 
     # P2: Boiling guard - ensure background species have minimum mole fraction
+    y_cond, ys_cap_hit, y_bg_total_guard = _apply_boiling_guard(y_cond, EPS_BG)
     y_cond_sum = float(np.sum(y_cond))
-    ys_cap_hit = False
-    if y_cond_sum > 1.0 - EPS_BG:
-        # Scale condensables to leave minimum background fraction
-        scale = (1.0 - EPS_BG) / max(y_cond_sum, 1e-300)
-        y_cond *= scale
-        y_cond_sum = float(np.sum(y_cond))
-        ys_cap_hit = True
 
     mask_bg = np.ones(Ns_g, dtype=bool)
     mask_bg[idxG] = False
