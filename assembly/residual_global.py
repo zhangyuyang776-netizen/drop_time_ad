@@ -24,6 +24,7 @@ from properties.equilibrium import (
     InterfaceEquilibriumError,
     build_equilibrium_model,
     compute_interface_equilibrium,
+    compute_interface_equilibrium_full,
 )
 from solvers.nonlinear_context import NonlinearContext
 
@@ -833,3 +834,69 @@ def residual_petsc(
             Fg.axpy(1.0, Fg_out)
         return Fg
     return Fg_out
+
+
+# ============================================================================
+# TEST-ONLY: Smoke test helper for P2 boiling guard verification
+# ============================================================================
+
+
+def _smoke_call_interface_equilibrium(cfg, layout, grid, state_props, eq_model=None):
+    """
+    Test-only helper to call interface equilibrium from residual path.
+
+    P2 Smoke Test: Verifies boiling guard is applied in actual residual assembly path.
+
+    Args:
+        cfg: CaseConfig with physics.include_mpp=True
+        layout: UnknownLayout with mpp block
+        grid: Grid1D with Nl, Ng
+        state_props: State with Yl, Yg, Ts
+        eq_model: Optional EquilibriumModel (will build if None)
+
+    Returns:
+        EquilibriumResult with meta containing ys_cap_hit, y_bg_total, etc.
+
+    Raises:
+        InterfaceEquilibriumError: If equilibrium computation fails
+    """
+    # Check needs_eq condition (same as residual_global logic)
+    phys = cfg.physics
+    needs_eq = bool(getattr(phys, "include_mpp", False) and layout.has_block("mpp"))
+
+    if not needs_eq:
+        raise ValueError(
+            "Smoke test requires include_mpp=True and layout with 'mpp' block"
+        )
+
+    # Build equilibrium model if not provided
+    if eq_model is None:
+        Ns_g = len(cfg.species.gas_species_full)
+        Ns_l = len(cfg.species.liq_species)
+        M_g = _build_molar_mass_from_cfg(
+            list(cfg.species.gas_species_full), Ns_g, cfg.species.molar_mass
+        )
+        M_l = _build_molar_mass_from_cfg(
+            list(cfg.species.liq_species), Ns_l, cfg.species.molar_mass
+        )
+        eq_model = build_equilibrium_model(cfg, Ns_g, Ns_l, M_g, M_l)
+
+    # Extract interface conditions (same as residual_global)
+    il_if = grid.Nl - 1
+    ig_if = 0
+    Ts_if = float(state_props.Ts)
+    Pg_if = float(getattr(cfg.initial, "P_inf", 101325.0))
+    Yl_face = np.asarray(state_props.Yl[:, il_if], dtype=np.float64)
+    Yg_face = np.asarray(state_props.Yg[:, ig_if], dtype=np.float64)
+
+    # Call compute_interface_equilibrium_full (not legacy wrapper)
+    # This returns EquilibriumResult with meta containing ys_cap_hit, y_bg_total
+    eq_result = compute_interface_equilibrium_full(
+        eq_model,
+        Ts=Ts_if,
+        Pg=Pg_if,
+        Yl_face=Yl_face,
+        Yg_face=Yg_face,
+    )
+
+    return eq_result
