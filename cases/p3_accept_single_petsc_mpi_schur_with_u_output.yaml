@@ -48,11 +48,16 @@ physics:
     Ts_fixed: 300.0
     equilibrium:
       method: "raoult_psat"
-      psat_model: "coolprop"
+      psat_model: "coolprop"  # Retained but not used for psat when sat_source="custom"
       condensables_gas: ["NC12H26"]
       coolprop:
         backend: "HEOS"
         fluids: ["n-Dodecane"]
+      # P4 Stage 2: Switch to custom saturation model (Millán-Merino + Watson)
+      sat_source: "custom"
+      custom_sat:
+        model: "mm_integral_watson"
+        params_file: "mechanism/liquid_sat_params.yaml"
 
 species:
   gas_balance_species: "N2"

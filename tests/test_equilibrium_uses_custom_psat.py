@@ -325,6 +325,61 @@ def test_build_model_fails_if_species_not_in_db():
         build_equilibrium_model(cfg, Ns_g, Ns_l, M_g, M_l)
 
 
+# ============================================================================
+# Test 7: CoolProp decoupling verification (Stage 2)
+# ============================================================================
+
+
+def test_custom_psat_does_not_call_coolprop(monkeypatch):
+    """
+    P4 Stage 2: Verify custom saturation does NOT call CoolProp.
+
+    Strategy: Monkeypatch CoolProp.PropsSI to raise an exception.
+    If sat_source="custom", compute_interface_equilibrium_full() should still work
+    because it doesn't call CoolProp for psat calculation.
+    """
+    # Monkeypatch CoolProp.PropsSI to always raise
+    def fake_props_si_that_raises(*args, **kwargs):
+        raise RuntimeError(
+            "CoolProp.PropsSI was called! This should not happen when sat_source='custom'"
+        )
+
+    # Try to patch CoolProp if available
+    try:
+        import CoolProp.CoolProp as CP
+        monkeypatch.setattr(CP, "PropsSI", fake_props_si_that_raises)
+    except ImportError:
+        # CoolProp not installed, skip this verification
+        # (but test should still pass because custom doesn't need it)
+        pass
+
+    # Build model with sat_source="custom"
+    cfg = _make_minimal_cfg_custom_sat()
+
+    Ns_g = 3
+    Ns_l = 1
+    M_g = np.array([170.33, 32.0, 28.0])
+    M_l = np.array([170.33])
+
+    model = build_equilibrium_model(cfg, Ns_g, Ns_l, M_g, M_l)
+
+    # Compute equilibrium with custom psat
+    Ts = 450.0  # K (below Tb)
+    Pg = 101325.0  # Pa
+    Yl_face = np.array([1.0])
+    Yg_face = np.array([0.0, 0.21, 0.79])
+
+    # This should NOT raise "CoolProp.PropsSI was called!" if custom is properly decoupled
+    res = compute_interface_equilibrium_full(model, Ts, Pg, Yl_face, Yg_face)
+
+    # Verify it used custom source
+    assert res.meta["psat_source"] == "custom"
+
+    # Verify results are reasonable
+    assert np.all(np.isfinite(res.psat))
+    assert np.all(res.psat > 0)
+
+
 if __name__ == "__main__":
     # Run with pytest
     pytest.main([__file__, "-v"])
