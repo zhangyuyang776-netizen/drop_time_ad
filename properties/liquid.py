@@ -27,6 +27,7 @@ else:
     _cp_import_error = None
 
 from core.types import CaseConfig, Grid1D, State
+from properties.equilibrium import InterfaceEquilibriumError
 
 FloatArray = np.ndarray
 logger = logging.getLogger(__name__)
@@ -74,21 +75,24 @@ def _pure_liquid_props(fluid: str, T: float, P: float) -> Tuple[float, float, fl
 
 
 def _psat_hvap(fluid: str, T: float) -> Tuple[float, float]:
-    """Return psat [Pa] and hvap [J/kg] at temperature T."""
+    """
+    Return psat [Pa] and hvap [J/kg] at temperature T.
+
+    P2: Strict single-path - no fallback to zero on failure.
+
+    Raises:
+        InterfaceEquilibriumError: If CoolProp fails to compute psat/hvap
+    """
     T_safe = _cp_safe_T(fluid, T)
     try:
         psat = float(CP.PropsSI("P", "T", T_safe, "Q", 0, fluid))
         hV = float(CP.PropsSI("H", "T", T_safe, "Q", 1, fluid))
         hL = float(CP.PropsSI("H", "T", T_safe, "Q", 0, fluid))
     except Exception as exc:
-        logger.warning(
-            "CoolProp psat/hvap failed for %s at T=%.3f (T_safe=%.3f): %s",
-            fluid,
-            T,
-            T_safe,
-            exc,
-        )
-        return 0.0, 0.0
+        # P2: Fail-fast instead of returning 0.0
+        raise InterfaceEquilibriumError(
+            f"CoolProp psat/hvap failed for {fluid} at T={T:.3f}K (T_safe={T_safe:.3f}K)"
+        ) from exc
     hvap = max(hV - hL, 0.0)
     return max(psat, 0.0), hvap
 

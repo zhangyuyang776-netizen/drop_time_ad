@@ -24,6 +24,7 @@ from core.types import CaseConfig
 
 FloatArray = np.ndarray
 EPS = 1e-30
+EPS_BG = 1e-5  # P2: Minimum background gas mole fraction (boiling guard)
 
 
 class InterfaceEquilibriumError(RuntimeError):
@@ -127,25 +128,25 @@ def _compute_psat_single(
     fluid_label: str, T: float, psat_model: str, T_ref: float, p_ref: Optional[float]
 ) -> Tuple[float, str, str]:
     """
-    Compute psat with CoolProp first (if requested/available), Clausius fallback.
+    Compute psat with strict single-path routing (P2: no fallback).
 
     Returns:
         (value, source, reason)
         - value: psat in Pa
-        - source: "coolprop" | "clausius" | "fallback"
-        - reason: failure reason if fallback was used, else ""
+        - source: "coolprop" | "clausius"
+        - reason: always "" (no fallback allowed)
+
+    Raises:
+        InterfaceEquilibriumError: If CoolProp fails when psat_model="coolprop" or "auto"
     """
     if psat_model in ("coolprop", "auto"):
         val = _psat_coolprop_single(fluid_label, T)
         if val is not None:
             return (val, "coolprop", "")
-        # CoolProp failed
-        reason = f"CoolProp failed for {fluid_label} at T={T:.2f}K"
-        if psat_model == "coolprop":
-            warnings.warn(f"{reason}; falling back to Clausius.")
-        # Fallback to Clausius
-        val_clausius = _psat_clausius_single(fluid_label, T, T_ref, p_ref)
-        return (val_clausius, "fallback", reason)
+        # P2: CoolProp failed - raise instead of fallback
+        raise InterfaceEquilibriumError(
+            f"CoolProp psat failed for {fluid_label} at T={T:.2f}K (psat_model={psat_model})"
+        )
     # Direct Clausius (psat_model == "clausius")
     val = _psat_clausius_single(fluid_label, T, T_ref, p_ref)
     return (val, "clausius", "")
@@ -157,11 +158,13 @@ def _psat_vec_all_with_meta(
     """
     Compute psat vector for all liquid species with source tracking.
 
+    P2: Strict single-path - no fallback allowed.
+
     Returns:
         (psat, sources, reasons)
         - psat: (Ns_l,) saturation pressures [Pa]
-        - sources: list of "coolprop"/"clausius"/"fallback" for each species
-        - reasons: list of failure reasons (empty string if no fallback)
+        - sources: list of "coolprop" or "clausius" for each species
+        - reasons: always "" (no fallback; failures raise InterfaceEquilibriumError)
     """
     Ns_l = len(model.liq_names)
     psat = np.zeros(Ns_l, dtype=np.float64)
@@ -332,6 +335,16 @@ def compute_interface_equilibrium_full(
 
     y_cond = p_partial / Pg_safe if idxG.size else np.zeros(0, dtype=np.float64)
 
+    # P2: Boiling guard - ensure background species have minimum mole fraction
+    y_cond_sum = float(np.sum(y_cond))
+    ys_cap_hit = False
+    if y_cond_sum > 1.0 - EPS_BG:
+        # Scale condensables to leave minimum background fraction
+        scale = (1.0 - EPS_BG) / max(y_cond_sum, 1e-300)
+        y_cond *= scale
+        y_cond_sum = float(np.sum(y_cond))
+        ys_cap_hit = True
+
     mask_bg = np.ones(Ns_g, dtype=bool)
     mask_bg[idxG] = False
 
@@ -368,18 +381,15 @@ def compute_interface_equilibrium_full(
     if s_Yg > EPS and not np.isclose(s_Yg, 1.0, rtol=1e-12, atol=1e-12):
         Yg_eq = Yg_eq / s_Yg
 
-    # P0.1: Build meta dict with source tracking
-    psat_source_summary = "coolprop"
+    # P2: Build meta dict with source tracking (P2: no fallback, only coolprop or clausius)
+    if all(src == "coolprop" for src in psat_sources):
+        psat_source_summary = "coolprop"
+    elif all(src == "clausius" for src in psat_sources):
+        psat_source_summary = "clausius"
+    else:
+        psat_source_summary = "mixed"
+    # P2: reasons should always be empty (no fallback)
     fallback_reason_summary = ""
-    if any(src in ("fallback", "clausius") for src in psat_sources):
-        if all(src == "clausius" for src in psat_sources):
-            psat_source_summary = "clausius"
-        else:
-            psat_source_summary = "fallback"
-        # Collect non-empty reasons
-        reasons_list = [r for r in psat_reasons if r]
-        if reasons_list:
-            fallback_reason_summary = "; ".join(reasons_list)
 
     # P0.1: Check finite validity
     finite_ok = (
@@ -388,13 +398,34 @@ def compute_interface_equilibrium_full(
         and np.all(np.isfinite(Yg_eq))
     )
 
+    # P2: Consistency checks
+    y_all_sum = float(np.sum(y_all))
+    if not np.isfinite(y_all_sum) or abs(y_all_sum - 1.0) > 1e-10:
+        raise InterfaceEquilibriumError(
+            f"interface y_sum != 1: {y_all_sum} at Ts={Ts:.6g}, Pg={Pg:.6g}"
+        )
+    y_all_min = float(np.min(y_all))
+    if y_all_min < -1e-14:
+        raise InterfaceEquilibriumError(
+            f"interface y has negative component: min={y_all_min} at Ts={Ts:.6g}, Pg={Pg:.6g}"
+        )
+
+    # P2: Calculate psat_over_P for diagnostics
+    psat_over_P = 0.0
+    if idxL.size > 0:
+        psat_over_P = float(np.max(psat[idxL]) / max(Pg, 1.0))
+
     meta = {
         "psat_sources": psat_sources,  # List per species
-        "psat_reasons": psat_reasons,  # List per species
-        "psat_source": psat_source_summary,  # "coolprop" | "fallback" | "clausius" | "mixed"
+        "psat_reasons": psat_reasons,  # List per species (P2: always empty)
+        "psat_source": psat_source_summary,  # P2: "coolprop" | "clausius" | "mixed"
         "hvap_source": "not_computed",  # Placeholder (hvap not tracked in equilibrium.py)
-        "fallback_reason": fallback_reason_summary,
+        "fallback_reason": fallback_reason_summary,  # P2: always empty (no fallback)
         "finite_ok": finite_ok,
+        "y_cond_sum": y_cond_sum,  # P2: Sum of condensable mole fractions
+        "y_bg_total": y_bg_total,  # P2: Total background mole fraction
+        "ys_cap_hit": ys_cap_hit,  # P2: Whether boiling guard was triggered
+        "psat_over_P": psat_over_P,  # P2: Max psat/Pg ratio
     }
 
     return EquilibriumResult(
