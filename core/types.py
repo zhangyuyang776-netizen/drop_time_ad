@@ -186,11 +186,22 @@ class CaseCoolProp:
 
 
 @dataclass(slots=True)
+class CaseCustomSat:
+    """P4: Custom saturation model configuration."""
+    model: str = "mm_integral_watson"
+    params_file: str = ""
+
+
+@dataclass(slots=True)
 class CaseEquilibrium:
     method: str = "raoult_psat"
     psat_model: str = "coolprop"
     condensables_gas: List[str] = field(default_factory=list)
     coolprop: CaseCoolProp = field(default_factory=CaseCoolProp)
+    # P4: Custom saturation support
+    sat_source: str = "coolprop"  # "coolprop" | "custom"
+    custom_sat: CaseCustomSat = field(default_factory=CaseCustomSat)
+
 
 
 @dataclass(slots=True)
