@@ -295,13 +295,28 @@ def _psat_coolprop_single(fluid_label: str, T: float) -> Optional[float]:
 
 
 def _psat_clausius_single(fluid_label: str, T: float, T_ref: float, p_ref: Optional[float]) -> float:
-    """Simple Clausius-Clapeyron fallback: p = p_ref * exp(-B(1/T - 1/T_ref)); crude placeholder."""
-    if p_ref is None or p_ref <= 0.0:
-        return 0.0
+    """
+    Simple Clausius-Clapeyron fallback: p = p_ref * exp(-B(1/T - 1/T_ref)).
+
+    P3: Fail-fast on invalid psat_ref (no silent return 0.0).
+    """
+    # P3: Fail-fast on invalid psat_ref
+    if p_ref is None or not np.isfinite(p_ref) or p_ref <= 0.0:
+        raise InterfaceEquilibriumError(
+            f"Invalid psat_ref for {fluid_label}: {p_ref} (must be finite and positive)"
+        )
+
     # Placeholder constant slope; can be replaced with real parameters if available
     B = 2000.0
     val = p_ref * np.exp(-B * (1.0 / max(T, EPS) - 1.0 / max(T_ref, EPS)))
-    return float(np.nan_to_num(val, nan=0.0, posinf=0.0, neginf=0.0))
+
+    # P3: Fail-fast on non-finite result (no nan_to_num)
+    if not np.isfinite(val):
+        raise InterfaceEquilibriumError(
+            f"Non-finite psat from Clausius for {fluid_label}: psat={val}, T={T:.2f}K, p_ref={p_ref}"
+        )
+
+    return float(val)
 
 
 def _compute_psat_single(
@@ -489,11 +504,31 @@ def compute_interface_equilibrium_full(
     9) P3: Finalize simplex (light correction only, fail-fast on large errors).
     10) Convert mole -> mass fractions for gas.
     """
+    # P3: Input validation (fail-fast on non-finite or invalid inputs)
+    if not np.isfinite(Ts) or Ts <= 0.0:
+        raise InterfaceEquilibriumError(
+            f"Invalid surface temperature Ts={Ts} (must be finite and positive)"
+        )
+    if not np.isfinite(Pg) or Pg <= 0.0:
+        raise InterfaceEquilibriumError(
+            f"Invalid gas pressure Pg={Pg} (must be finite and positive)"
+        )
+
     Ns_g = len(model.M_g)
     Ns_l = len(model.M_l)
 
     Yl_face = np.asarray(Yl_face, dtype=np.float64).reshape(Ns_l)
     Yg_face = np.asarray(Yg_face, dtype=np.float64).reshape(Ns_g)
+
+    # P3: Check array inputs for finite values
+    if not np.all(np.isfinite(Yl_face)):
+        raise InterfaceEquilibriumError(
+            f"Non-finite values in Yl_face: {Yl_face}"
+        )
+    if not np.all(np.isfinite(Yg_face)):
+        raise InterfaceEquilibriumError(
+            f"Non-finite values in Yg_face: {Yg_face}"
+        )
 
     # Clean liquid face (defensive, allow zero)
     yl_sum = float(np.sum(Yl_face))

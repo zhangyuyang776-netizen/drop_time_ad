@@ -237,27 +237,107 @@ def test_condensable_guard_scales_not_raises():
 
 
 # ============================================================================
-# Test 8: Non-finite partial pressures must raise
+# Test 8: Non-finite inputs must raise (deterministic injection)
 # ============================================================================
 
 
-def test_failfast_nonfinite_partial_pressure():
+def test_failfast_nonfinite_temperature():
     """
-    P3: Non-finite partial pressures must raise InterfaceEquilibriumError.
+    P3: Non-finite temperature must raise InterfaceEquilibriumError.
 
-    Strategy: Create extremely high temperature to cause numerical issues.
+    Strategy: Directly inject np.nan as Ts (deterministic, not relying on overflow).
     """
     cfg, eq_model = _make_minimal_eq_model(psat_ref=1000.0)
 
-    # Extreme temperature (may cause numerical overflow in Clausius)
-    Ts = 1e10  # Extremely high temperature
+    # Directly inject non-finite temperature
+    Ts = np.nan
     Pg = 101325.0
     Yl_face = np.array([1.0])
     Yg_face = np.array([0.0, 0.21, 0.79])
 
-    # P3: Should raise on non-finite values (either in psat or partial pressure computation)
-    with pytest.raises(InterfaceEquilibriumError):
+    # P3: Must raise on non-finite Ts
+    with pytest.raises(InterfaceEquilibriumError, match="Invalid surface temperature"):
         compute_interface_equilibrium_full(eq_model, Ts, Pg, Yl_face, Yg_face)
+
+
+def test_failfast_nonfinite_pressure():
+    """
+    P3: Non-finite pressure must raise InterfaceEquilibriumError.
+
+    Strategy: Directly inject np.inf as Pg.
+    """
+    cfg, eq_model = _make_minimal_eq_model(psat_ref=1000.0)
+
+    Ts = 350.0
+    Pg = np.inf  # Non-finite pressure
+    Yl_face = np.array([1.0])
+    Yg_face = np.array([0.0, 0.21, 0.79])
+
+    # P3: Must raise on non-finite Pg
+    with pytest.raises(InterfaceEquilibriumError, match="Invalid gas pressure"):
+        compute_interface_equilibrium_full(eq_model, Ts, Pg, Yl_face, Yg_face)
+
+
+def test_failfast_nonfinite_composition():
+    """
+    P3: Non-finite composition arrays must raise InterfaceEquilibriumError.
+
+    Strategy: Inject np.nan in Yg_face.
+    """
+    cfg, eq_model = _make_minimal_eq_model(psat_ref=1000.0)
+
+    Ts = 350.0
+    Pg = 101325.0
+    Yl_face = np.array([1.0])
+    Yg_face = np.array([0.0, np.nan, 0.79])  # Non-finite in composition
+
+    # P3: Must raise on non-finite Yg_face
+    with pytest.raises(InterfaceEquilibriumError, match="Non-finite values in Yg_face"):
+        compute_interface_equilibrium_full(eq_model, Ts, Pg, Yl_face, Yg_face)
+
+
+# ============================================================================
+# Test 9-10: Static regression tests (prevent hidden clip/cap from coming back)
+# ============================================================================
+
+
+def test_static_no_hidden_cap_in_equilibrium():
+    """
+    P3: Static check to prevent "0.995" cap from regressing.
+
+    This test scans the source code to ensure no hidden caps remain.
+    """
+    import pathlib
+
+    eq_file = pathlib.Path(__file__).parent.parent / "properties" / "equilibrium.py"
+    content = eq_file.read_text()
+
+    # Check for old 0.995 cap
+    assert "0.995" not in content, (
+        "Found '0.995' in equilibrium.py - old Pg cap may have regressed! "
+        "P3 requires all caps to go through unified constraint functions."
+    )
+
+
+def test_static_no_np_clip_in_equilibrium():
+    """
+    P3: Static check to prevent np.clip from regressing in critical paths.
+
+    np.clip is forbidden in composition/constraint logic (P3 requires fail-fast).
+    """
+    import pathlib
+
+    eq_file = pathlib.Path(__file__).parent.parent / "properties" / "equilibrium.py"
+    content = eq_file.read_text()
+
+    # Count np.clip occurrences
+    clip_count = content.count("np.clip")
+
+    # P3: Should be zero (all hard clips removed)
+    assert clip_count == 0, (
+        f"Found {clip_count} instances of 'np.clip' in equilibrium.py. "
+        "P3 forbids hard clipping - use unified constraint functions with fail-fast instead."
+    )
 
 
 if __name__ == "__main__":
