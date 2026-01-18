@@ -324,12 +324,12 @@ def compute_interface_equilibrium_full(
     2) convert liquid mass -> mole fractions.
     3) build psat vector (clipped non-negative).
     4) Raoult partial pressures for condensables (with NaN/neg guards).
-     5) cap total condensable partial pressure to 0.995*Pg.
-     6) condensable gas mole fractions.
-     7) choose background source mole fractions from farfield (not interface) to preserve species ratios.
-     8) allocate background total fraction = 1 - sum(y_cond).
-     9) assemble full gas mole fractions; clip/optional renorm for numerical noise.
-     10) convert mole -> mass fractions for gas.
+    5) condensable gas mole fractions.
+    6) P2: apply boiling guard to ensure y_bg >= EPS_BG.
+    7) choose background source mole fractions from farfield (not interface) to preserve species ratios.
+    8) allocate background total fraction = 1 - sum(y_cond).
+    9) assemble full gas mole fractions; clip/optional renorm for numerical noise.
+    10) convert mole -> mass fractions for gas.
     """
     Ns_g = len(model.M_g)
     Ns_l = len(model.M_l)
@@ -359,11 +359,7 @@ def compute_interface_equilibrium_full(
     sum_partials = float(np.sum(p_partial))
 
     Pg_safe = max(float(Pg), 1.0)
-    cap = 0.995 * Pg_safe
-    if sum_partials > cap and sum_partials > 0.0:
-        p_partial *= cap / sum_partials
-        sum_partials = cap
-
+    # P2: Removed old 0.995*Pg cap - now using _apply_boiling_guard as sole constraint
     y_cond = p_partial / Pg_safe if idxG.size else np.zeros(0, dtype=np.float64)
 
     # P2: Boiling guard - ensure background species have minimum mole fraction
