@@ -262,6 +262,11 @@ class EquilibriumModel:
     T_ref: float = 298.15
     psat_ref: Dict[str, float] = field(default_factory=dict)
 
+    # P4: Custom saturation support
+    sat_source: str = "coolprop"  # "coolprop" | "custom"
+    sat_model: Optional[Any] = None  # SaturationModelMM instance (avoid circular import)
+    sat_db: Optional[Any] = None  # LiquidSatDB instance
+
 
 @dataclass(slots=True)
 class EquilibriumResult:
@@ -354,17 +359,47 @@ def _psat_vec_all_with_meta(
     Compute psat vector for all liquid species with source tracking.
 
     P2: Strict single-path - no fallback allowed.
+    P4: Routes to custom saturation model if sat_source="custom".
 
     Returns:
         (psat, sources, reasons)
         - psat: (Ns_l,) saturation pressures [Pa]
-        - sources: list of "coolprop" or "clausius" for each species
+        - sources: list of "coolprop" or "clausius" or "custom" for each species
         - reasons: always "" (no fallback; failures raise InterfaceEquilibriumError)
     """
     Ns_l = len(model.liq_names)
     psat = np.zeros(Ns_l, dtype=np.float64)
     sources: List[str] = []
     reasons: List[str] = []
+
+    # P4: Route to custom saturation model if configured
+    if model.sat_source == "custom":
+        if model.sat_model is None or model.sat_db is None:
+            raise InterfaceEquilibriumError(
+                "sat_source='custom' but sat_model or sat_db is None. "
+                "Check build_equilibrium_model configuration."
+            )
+
+        for i, name in enumerate(model.liq_names):
+            # Get species parameters from database
+            sp_params = model.sat_db.get_params(name)
+
+            # Compute psat using custom model
+            val = model.sat_model.psat(sp_params, T)
+
+            # P3: Fail-fast on invalid psat
+            if not np.isfinite(val) or val < 0.0:
+                raise InterfaceEquilibriumError(
+                    f"Invalid psat for {name} at T={T:.2f}K: psat={val} (source=custom)"
+                )
+
+            psat[i] = val
+            sources.append("custom")
+            reasons.append("")
+
+        return psat, sources, reasons
+
+    # Original CoolProp/Clausius path (sat_source="coolprop")
     for i, name in enumerate(model.liq_names):
         p_ref = model.psat_ref.get(name)
         base_label = model.cp_fluids[i] if i < len(model.cp_fluids) else name
@@ -462,6 +497,45 @@ def build_equilibrium_model(
         Yg_far /= s_far
     Xg_far = mass_to_mole(Yg_far, M_g)
 
+    # P4: Load custom saturation model if configured
+    sat_source = getattr(eq_cfg, "sat_source", "coolprop")
+    sat_model = None
+    sat_db = None
+
+    if sat_source == "custom":
+        # Import here to avoid circular dependency
+        from properties.liquid_sat_db import load_liquid_sat_db
+        from properties.saturation_models import create_saturation_model
+
+        # Get custom_sat config
+        custom_sat_cfg = getattr(eq_cfg, "custom_sat", None)
+        if custom_sat_cfg is None:
+            raise ValueError(
+                "sat_source='custom' requires 'custom_sat' configuration "
+                "(model and params_file)"
+            )
+
+        # Extract model name and params file
+        model_name = getattr(custom_sat_cfg, "model", "mm_integral_watson")
+        params_file = getattr(custom_sat_cfg, "params_file", None)
+        if params_file is None:
+            raise ValueError(
+                "sat_source='custom' requires 'custom_sat.params_file' "
+                "(path to liquid_sat_params.yaml)"
+            )
+
+        # Load database and create model
+        sat_db = load_liquid_sat_db(params_file)
+        sat_model = create_saturation_model(model_name)
+
+        # Validate that all liquid species have parameters in DB
+        for liq_name in liq_names:
+            if not sat_db.has_species(liq_name):
+                raise InterfaceEquilibriumError(
+                    f"Liquid species '{liq_name}' not found in custom saturation database "
+                    f"(loaded from {params_file}). Available: {sat_db.list_species()}"
+                )
+
     return EquilibriumModel(
         method=eq_cfg.method,
         psat_model=eq_cfg.psat_model,
@@ -477,6 +551,9 @@ def build_equilibrium_model(
         cp_fluids=cp_fluids,
         T_ref=298.15,
         psat_ref={},
+        sat_source=sat_source,
+        sat_model=sat_model,
+        sat_db=sat_db,
     )
 
 
