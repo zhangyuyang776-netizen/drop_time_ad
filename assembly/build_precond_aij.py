@@ -69,7 +69,7 @@ def _build_state_props_eq(
     needs_eq = bool(getattr(cfg.physics, "include_mpp", False) and layout.has_block("mpp"))
     if needs_eq:
         from assembly.residual_global import _get_or_build_eq_model
-        from properties.equilibrium import compute_interface_equilibrium
+        from properties.equilibrium import compute_interface_equilibrium_full
 
         cache = ctx.meta.get("eq_result_cache")
         eq_model = _get_or_build_eq_model(ctx, state_guess)
@@ -80,7 +80,8 @@ def _build_state_props_eq(
             Pg_if = float(getattr(cfg.initial, "P_inf", 101325.0))
             Yl_face = np.asarray(state_props.Yl[:, il_if], dtype=np.float64)
             Yg_face = np.asarray(state_props.Yg[:, ig_if], dtype=np.float64)
-            Yg_eq, y_cond, psat = compute_interface_equilibrium(
+            # P4: Use compute_interface_equilibrium_full to get full diagnostics including meta
+            eq = compute_interface_equilibrium_full(
                 eq_model,
                 Ts=Ts_if,
                 Pg=Pg_if,
@@ -89,9 +90,9 @@ def _build_state_props_eq(
             )
 
             # P1: Non-finite sentinel - fail-fast to prevent NaN propagation
-            Yg_eq_arr = np.asarray(Yg_eq, dtype=np.float64)
-            y_cond_arr = np.asarray(y_cond, dtype=np.float64)
-            psat_arr = np.asarray(psat, dtype=np.float64)
+            Yg_eq_arr = np.asarray(eq.Yg_eq, dtype=np.float64)
+            y_cond_arr = np.asarray(eq.y_cond, dtype=np.float64)
+            psat_arr = np.asarray(eq.psat, dtype=np.float64)
 
             if not np.all(np.isfinite(Yg_eq_arr)):
                 raise InterfaceEquilibriumError(
@@ -106,7 +107,13 @@ def _build_state_props_eq(
                     f"equilibrium returned non-finite psat: Ts={Ts_if:.6g}, Pg={Pg_if:.6g}, psat={psat_arr}"
                 )
 
-            eq_result = {"Yg_eq": Yg_eq_arr, "y_cond": y_cond_arr, "psat": psat_arr}
+            # P4: Include meta for source tracking
+            eq_result = {
+                "Yg_eq": Yg_eq_arr,
+                "y_cond": y_cond_arr,
+                "psat": psat_arr,
+                "meta": dict(eq.meta),
+            }
             eq_source = "computed"
             ctx.meta["eq_result_cache"] = dict(eq_result)
         except Exception as exc:

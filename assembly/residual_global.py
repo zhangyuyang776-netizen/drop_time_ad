@@ -23,7 +23,6 @@ from properties.compute_props import compute_props, get_or_build_models
 from properties.equilibrium import (
     InterfaceEquilibriumError,
     build_equilibrium_model,
-    compute_interface_equilibrium,
     compute_interface_equilibrium_full,
 )
 from solvers.nonlinear_context import NonlinearContext
@@ -248,14 +247,23 @@ def build_transport_system_from_ctx(
             Yg_face = np.asarray(state_props.Yg[:, ig_if], dtype=np.float64)
             Yl_shape = tuple(Yl_face.shape)
             Yg_shape = tuple(Yg_face.shape)
-            Yg_eq, y_cond, psat = compute_interface_equilibrium(
+            # P4: Use compute_interface_equilibrium_full to get full diagnostics including meta
+            eq = compute_interface_equilibrium_full(
                 eq_model,
                 Ts=Ts_if,
                 Pg=Pg_if,
                 Yl_face=Yl_face,
                 Yg_face=Yg_face,
             )
-            eq_result = {"Yg_eq": np.asarray(Yg_eq), "y_cond": np.asarray(y_cond), "psat": np.asarray(psat)}
+            eq_result = {
+                "Yg_eq": np.asarray(eq.Yg_eq),
+                "y_cond": np.asarray(eq.y_cond),
+                "psat": np.asarray(eq.psat),
+                "meta": dict(eq.meta),  # P4: Preserve meta for source tracking
+            }
+            Yg_eq = eq_result["Yg_eq"]
+            y_cond = eq_result["y_cond"]
+            psat = eq_result["psat"]
 
             # P0.2: NaN/Inf sentinel - catch non-finite values immediately
             psat_arr = np.asarray(psat)
@@ -500,14 +508,23 @@ def build_global_residual(
             Yg_face = np.asarray(state_props.Yg[:, ig_if], dtype=np.float64)
             Yl_shape = tuple(Yl_face.shape)
             Yg_shape = tuple(Yg_face.shape)
-            Yg_eq, y_cond, psat = compute_interface_equilibrium(
+            # P4: Use compute_interface_equilibrium_full to get full diagnostics including meta
+            eq = compute_interface_equilibrium_full(
                 eq_model,
                 Ts=Ts_if,
                 Pg=Pg_if,
                 Yl_face=Yl_face,
                 Yg_face=Yg_face,
             )
-            eq_result = {"Yg_eq": np.asarray(Yg_eq), "y_cond": np.asarray(y_cond), "psat": np.asarray(psat)}
+            eq_result = {
+                "Yg_eq": np.asarray(eq.Yg_eq),
+                "y_cond": np.asarray(eq.y_cond),
+                "psat": np.asarray(eq.psat),
+                "meta": dict(eq.meta),  # P4: Preserve meta for source tracking
+            }
+            Yg_eq = eq_result["Yg_eq"]
+            y_cond = eq_result["y_cond"]
+            psat = eq_result["psat"]
 
             # P0.2: NaN/Inf sentinel - catch non-finite values immediately
             psat_arr = np.asarray(psat)
