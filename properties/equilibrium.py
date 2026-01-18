@@ -633,10 +633,42 @@ def compute_interface_equilibrium_full(
     Pg_safe = max(float(Pg), 1.0)
     y_cond = p_partial / Pg_safe if idxG.size else np.zeros(0, dtype=np.float64)
 
+    # P4: Calculate psat_over_P for early guard triggering near boiling point
+    psat_over_P = 0.0
+    if idxL.size > 0:
+        psat_over_P = float(np.max(psat[idxL]) / max(Pg, 1.0))
+
+    # P4: Early guard trigger if psat is close to Pg (near boiling point)
+    # This prevents numerical issues when approaching phase change
+    GUARD_PSAT_RATIO = 0.8  # Trigger guard when psat/Pg >= 0.8
+    early_trigger = psat_over_P >= GUARD_PSAT_RATIO
+
     # P3: Apply condensable guard (unified constraint, sole authority over condensables)
     # Check environment variable for smooth guard (default: hard guard)
     use_smooth_guard = os.environ.get("DROPLET_SMOOTH_GUARD", "0") in ("1", "true", "True", "TRUE")
-    y_cond, guard_meta = _apply_condensable_guard(y_cond, boundary=1.0 - EPS_BG, smooth=use_smooth_guard)
+
+    if early_trigger and not use_smooth_guard:
+        # P4: Force guard trigger near boiling point
+        boundary = 1.0 - EPS_BG
+        y_cond_sum_pre = float(np.sum(y_cond))
+        if y_cond_sum_pre > boundary:
+            # Already exceeds boundary, normal guard applies
+            y_cond, guard_meta = _apply_condensable_guard(y_cond, boundary=boundary, smooth=False)
+        else:
+            # Force scaling to boundary to ensure background has space
+            scale = boundary / max(y_cond_sum_pre, 1e-300)
+            y_cond = y_cond * scale
+            y_cond_sum = float(np.sum(y_cond))
+            guard_meta = {
+                "ys_cap_hit": True,  # Forced by psat_over_P criterion
+                "y_cond_sum": y_cond_sum,
+                "boundary": boundary,
+                "guard_type": "hard_early",
+            }
+    else:
+        # Normal guard (regular or smooth)
+        y_cond, guard_meta = _apply_condensable_guard(y_cond, boundary=1.0 - EPS_BG, smooth=use_smooth_guard)
+
     ys_cap_hit = guard_meta["ys_cap_hit"]
     y_cond_sum = guard_meta["y_cond_sum"]
 
@@ -685,10 +717,13 @@ def compute_interface_equilibrium_full(
             )
 
     # P2: Build meta dict with source tracking (P2: no fallback, only coolprop or clausius)
+    # P4: Extended to support "custom" source
     if all(src == "coolprop" for src in psat_sources):
         psat_source_summary = "coolprop"
     elif all(src == "clausius" for src in psat_sources):
         psat_source_summary = "clausius"
+    elif all(src == "custom" for src in psat_sources):
+        psat_source_summary = "custom"
     else:
         psat_source_summary = "mixed"
     # P2: reasons should always be empty (no fallback)
@@ -713,10 +748,7 @@ def compute_interface_equilibrium_full(
             f"interface y has negative component: min={y_all_min} at Ts={Ts:.6g}, Pg={Pg:.6g}"
         )
 
-    # P2: Calculate psat_over_P for diagnostics
-    psat_over_P = 0.0
-    if idxL.size > 0:
-        psat_over_P = float(np.max(psat[idxL]) / max(Pg, 1.0))
+    # P2/P4: psat_over_P already calculated earlier for early guard triggering
 
     meta = {
         "psat_sources": psat_sources,  # List per species
