@@ -380,6 +380,178 @@ def test_custom_psat_does_not_call_coolprop(monkeypatch):
     assert np.all(res.psat > 0)
 
 
+# ============================================================================
+# Test 8: Custom hvap does not call CoolProp (坑A verification)
+# ============================================================================
+
+
+def test_custom_sat_hvap_does_not_call_coolprop(monkeypatch):
+    """
+    P4 Stage 2: Verify custom saturation hvap does NOT call CoolProp.
+
+    Strategy: Monkeypatch CoolProp.PropsSI to raise an exception.
+    When sat_source="custom", calling sat_model.hvap() should not trigger CoolProp.
+
+    This complements Test 7 by verifying hvap is also decoupled (psat/hvap same source).
+    """
+    # Monkeypatch CoolProp.PropsSI to always raise
+    def fake_props_si_that_raises(*args, **kwargs):
+        raise RuntimeError(
+            "CoolProp.PropsSI was called! This should not happen when using custom hvap"
+        )
+
+    # Try to patch CoolProp if available
+    try:
+        import CoolProp.CoolProp as CP
+        monkeypatch.setattr(CP, "PropsSI", fake_props_si_that_raises)
+    except ImportError:
+        # CoolProp not installed, test should still pass
+        pass
+
+    # Load custom saturation model and database
+    yaml_path = pathlib.Path(__file__).parent.parent / "mechanism" / "liquid_sat_params.yaml"
+    db = load_liquid_sat_db(yaml_path)
+    model = create_saturation_model("mm_integral_watson")
+
+    # Get parameters for NC12H26
+    params = db.get_params("NC12H26")
+
+    # Compute hvap at various temperatures
+    # This should NOT raise "CoolProp.PropsSI was called!" if custom is properly decoupled
+    T_range = [400, 420, 440, 460, 480]
+    hvap_values = []
+
+    for T in T_range:
+        hvap_val = model.hvap(params, T)
+        hvap_values.append(hvap_val)
+
+        # Verify hvap is finite and positive
+        assert np.isfinite(hvap_val), f"hvap(T={T}) is not finite: {hvap_val}"
+        assert hvap_val > 0, f"hvap(T={T}) is not positive: {hvap_val}"
+
+    # Verify hvap decreases with T (Watson behavior)
+    for i in range(len(hvap_values) - 1):
+        assert hvap_values[i + 1] < hvap_values[i], (
+            f"hvap not monotonically decreasing: hvap(T={T_range[i]})={hvap_values[i]:.1e}, "
+            f"hvap(T={T_range[i+1]})={hvap_values[i+1]:.1e}"
+        )
+
+
+# ============================================================================
+# Test 9: Real YAML config actually uses custom saturation (坑B verification)
+# ============================================================================
+
+
+def test_real_yaml_config_uses_custom_sat():
+    """
+    P4 Stage 2: Verify real YAML config file actually enables custom saturation.
+
+    Strategy: Load the actual case YAML file and verify:
+    1. sat_source is set to "custom"
+    2. custom_sat config is present and valid
+    3. Building equilibrium model with this config successfully uses custom saturation
+
+    This verifies that "just changing the config" actually works in practice.
+    """
+    import yaml
+
+    # Load real case config file
+    yaml_path = (
+        pathlib.Path(__file__).parent.parent
+        / "cases"
+        / "p3_accept_single_petsc_mpi_schur_with_u_output.yaml"
+    )
+
+    if not yaml_path.exists():
+        pytest.skip(f"Case YAML not found: {yaml_path}")
+
+    with open(yaml_path, "r") as f:
+        yaml_data = yaml.safe_load(f)
+
+    # Verify sat_source is set to "custom" in the YAML
+    eq_cfg = yaml_data.get("physics", {}).get("interface", {}).get("equilibrium", {})
+    assert eq_cfg.get("sat_source") == "custom", (
+        f"Expected sat_source='custom' in YAML, got '{eq_cfg.get('sat_source')}'"
+    )
+
+    # Verify custom_sat config is present
+    custom_sat_cfg = eq_cfg.get("custom_sat", {})
+    assert custom_sat_cfg.get("model") == "mm_integral_watson", (
+        f"Expected custom_sat.model='mm_integral_watson', got '{custom_sat_cfg.get('model')}'"
+    )
+    assert "params_file" in custom_sat_cfg, "custom_sat.params_file not specified in YAML"
+
+    # Now build an equilibrium model from this config to verify it actually works
+    # Create a minimal SimpleNamespace config object from the YAML data
+    params_file = custom_sat_cfg["params_file"]
+    params_file_abs = pathlib.Path(__file__).parent.parent / params_file
+
+    cfg = SimpleNamespace(
+        physics=SimpleNamespace(
+            interface=SimpleNamespace(
+                equilibrium=SimpleNamespace(
+                    method=eq_cfg.get("method", "raoult_psat"),
+                    psat_model=eq_cfg.get("psat_model", "coolprop"),
+                    condensables_gas=eq_cfg.get("condensables_gas", []),
+                    coolprop=SimpleNamespace(
+                        backend=eq_cfg.get("coolprop", {}).get("backend", "HEOS"),
+                        fluids=eq_cfg.get("coolprop", {}).get("fluids", []),
+                    ),
+                    sat_source="custom",
+                    custom_sat=SimpleNamespace(
+                        model=custom_sat_cfg["model"],
+                        params_file=str(params_file_abs),
+                    ),
+                )
+            )
+        ),
+        species=SimpleNamespace(
+            gas_species_full=["NC12H26", "O2", "N2"],
+            liq_species=["n-Dodecane"],
+            liq2gas_map={"n-Dodecane": "NC12H26"},
+            molar_mass={"NC12H26": 170.33, "O2": 32.0, "N2": 28.0},
+        ),
+        initial=SimpleNamespace(
+            P_inf=101325.0,
+            Yg={"NC12H26": 0.0, "O2": 0.21, "N2": 0.79},
+        ),
+    )
+
+    Ns_g = 3
+    Ns_l = 1
+    M_g = np.array([170.33, 32.0, 28.0])
+    M_l = np.array([170.33])
+
+    # Build equilibrium model - should not raise
+    model = build_equilibrium_model(cfg, Ns_g, Ns_l, M_g, M_l)
+
+    # Verify sat_source is "custom"
+    assert model.sat_source == "custom", (
+        f"Expected model.sat_source='custom', got '{model.sat_source}'"
+    )
+
+    # Verify sat_model and sat_db are loaded
+    assert model.sat_model is not None, "sat_model is None (should be loaded)"
+    assert model.sat_db is not None, "sat_db is None (should be loaded)"
+
+    # Verify we can compute equilibrium without errors
+    Ts = 450.0  # K
+    Pg = 101325.0  # Pa
+    Yl_face = np.array([1.0])
+    Yg_face = np.array([0.0, 0.21, 0.79])
+
+    res = compute_interface_equilibrium_full(model, Ts, Pg, Yl_face, Yg_face)
+
+    # Verify meta dict confirms custom source
+    assert res.meta["psat_source"] == "custom", (
+        f"Expected psat_source='custom', got '{res.meta['psat_source']}'"
+    )
+
+    # Verify results are physically reasonable
+    assert np.all(np.isfinite(res.psat)), f"psat has non-finite values: {res.psat}"
+    assert np.all(res.psat > 0), f"psat has non-positive values: {res.psat}"
+
+
 if __name__ == "__main__":
     # Run with pytest
     pytest.main([__file__, "-v"])
