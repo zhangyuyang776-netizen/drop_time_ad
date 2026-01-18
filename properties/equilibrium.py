@@ -372,6 +372,15 @@ def _psat_vec_all_with_meta(
     sources: List[str] = []
     reasons: List[str] = []
 
+    # P4 DEBUG: Log sat_source to verify configuration
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.warning(
+        f"[P4 DEBUG] _psat_vec_all_with_meta: model.sat_source='{model.sat_source}', "
+        f"sat_model={'present' if model.sat_model else 'None'}, "
+        f"sat_db={'present' if model.sat_db else 'None'}"
+    )
+
     # P4: Route to custom saturation model if configured
     if model.sat_source == "custom":
         if model.sat_model is None or model.sat_db is None:
@@ -501,6 +510,13 @@ def build_equilibrium_model(
     sat_source = getattr(eq_cfg, "sat_source", "coolprop")
     sat_model = None
     sat_db = None
+
+    # P4 DEBUG: Log configuration loading
+    import logging
+    logger = logging.getLogger(__name__)
+    logger.warning(
+        f"[P4 DEBUG] build_equilibrium_model: sat_source from cfg = '{sat_source}'"
+    )
 
     if sat_source == "custom":
         # Import here to avoid circular dependency
