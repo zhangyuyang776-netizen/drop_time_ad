@@ -9,6 +9,7 @@ Responsibilities:
 
 from __future__ import annotations
 
+import os
 import warnings
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Tuple
@@ -56,6 +57,154 @@ def _apply_boiling_guard(y_cond: np.ndarray, eps_bg: float = EPS_BG) -> Tuple[np
 
     y_bg_total = max(1.0 - y_cond_sum, 0.0)
     return y_cond, ys_cap_hit, y_bg_total
+
+
+# P3: Unified constraint flow functions
+
+
+def _apply_condensable_guard(
+    y_cond: np.ndarray, boundary: float = 1.0 - EPS_BG, smooth: bool = False
+) -> Tuple[np.ndarray, Dict[str, Any]]:
+    """
+    P3: Apply condensable guard with unified constraint.
+
+    Args:
+        y_cond: Condensable mole fractions
+        boundary: Maximum allowed sum of condensables (default: 1-EPS_BG)
+        smooth: If True, use smooth guard; if False, use hard guard (default)
+
+    Returns:
+        (y_cond_guarded, meta):
+            - y_cond_guarded: Scaled condensables if needed
+            - meta: {"ys_cap_hit": bool, "y_cond_sum": float, "boundary": float, "guard_type": str}
+    """
+    y_cond = np.asarray(y_cond, dtype=np.float64).copy()
+    y_cond_sum = float(np.sum(y_cond))
+    ys_cap_hit = False
+    guard_type = "smooth" if smooth else "hard"
+
+    if smooth:
+        # Smooth guard: gradually scale as approaching boundary
+        # Start smooth scaling at 90% of boundary, fully scaled at boundary
+        smooth_start = 0.9 * boundary
+        if y_cond_sum > smooth_start:
+            if y_cond_sum > boundary:
+                # Beyond boundary: apply hard limit
+                scale = boundary / max(y_cond_sum, 1e-300)
+                ys_cap_hit = True
+            else:
+                # In transition region [smooth_start, boundary]: smooth scaling
+                # Use smooth transition: scale = 1 - k*(x - smooth_start)/(boundary - smooth_start)
+                # where k controls transition steepness (k=0.5 for moderate smoothness)
+                transition = (y_cond_sum - smooth_start) / max(boundary - smooth_start, 1e-300)
+                k = 0.5
+                scale_reduction = k * transition
+                target_sum = y_cond_sum * (1.0 - scale_reduction)
+                scale = target_sum / max(y_cond_sum, 1e-300)
+                ys_cap_hit = True if y_cond_sum > 0.95 * boundary else False
+            y_cond *= scale
+            y_cond_sum = float(np.sum(y_cond))
+    else:
+        # Hard guard: sharp cutoff at boundary (default, P3 behavior)
+        if y_cond_sum > boundary:
+            scale = boundary / max(y_cond_sum, 1e-300)
+            y_cond *= scale
+            y_cond_sum = float(np.sum(y_cond))
+            ys_cap_hit = True
+
+    meta = {
+        "ys_cap_hit": ys_cap_hit,
+        "y_cond_sum": y_cond_sum,
+        "boundary": boundary,
+        "guard_type": guard_type,
+    }
+    return y_cond, meta
+
+
+def _fill_background(
+    y_bg_total: float,
+    X_farfield_background: np.ndarray,
+    idx_bg: np.ndarray,
+    Ns_g: int,
+) -> np.ndarray:
+    """
+    P3: Fill background species using farfield composition (must include closure species).
+
+    Args:
+        y_bg_total: Total mole fraction to allocate to background
+        X_farfield_background: Farfield mole fractions (full gas vector)
+        idx_bg: Boolean mask for background species
+        Ns_g: Total number of gas species
+
+    Returns:
+        y_bg: (Ns_g,) background mole fractions
+
+    Raises:
+        InterfaceEquilibriumError: If farfield background sum is zero
+    """
+    X_bg = np.where(idx_bg, X_farfield_background, 0.0)
+    s_bg = float(np.sum(X_bg))
+
+    if s_bg <= EPS:
+        raise InterfaceEquilibriumError(
+            "Farfield background sum is zero - cannot fill background species. "
+            "Check initial.Yg configuration."
+        )
+
+    X_bg_norm = X_bg / s_bg
+    y_bg = y_bg_total * X_bg_norm
+    return y_bg
+
+
+def _finalize_simplex(
+    y_all: np.ndarray, tol_neg: float = 1e-14, tol_sum: float = 1e-10
+) -> np.ndarray:
+    """
+    P3: Finalize mole fraction simplex with fail-fast (no hard clip).
+
+    Light numerical correction only:
+    - Tiny negative values (<tol_neg) set to 0, then renormalize
+    - Larger errors raise InterfaceEquilibriumError
+
+    Args:
+        y_all: Mole fractions to finalize
+        tol_neg: Tolerance for negative values
+        tol_sum: Tolerance for sum deviation from 1.0
+
+    Returns:
+        y_all_final: Corrected mole fractions
+
+    Raises:
+        InterfaceEquilibriumError: If negative values too large or sum far from 1.0
+    """
+    y_all = np.asarray(y_all, dtype=np.float64).copy()
+    y_min = float(np.min(y_all))
+    y_sum = float(np.sum(y_all))
+
+    # Check for large negative values (fail-fast)
+    if y_min < -tol_neg:
+        raise InterfaceEquilibriumError(
+            f"Large negative mole fraction detected: min={y_min:.6e} (tol={tol_neg:.6e}). "
+            "Refusing to clip - indicates numerical issue."
+        )
+
+    # Light correction: set tiny negatives to 0
+    if y_min < 0:
+        y_all = np.maximum(y_all, 0.0)
+        y_sum = float(np.sum(y_all))
+
+    # Check sum deviation (fail-fast if too large)
+    if not np.isfinite(y_sum) or abs(y_sum - 1.0) > tol_sum:
+        raise InterfaceEquilibriumError(
+            f"Mole fraction sum far from 1.0: sum={y_sum:.15f} (tol={tol_sum:.6e}). "
+            "Refusing to renormalize - indicates constraint violation."
+        )
+
+    # Renormalize if needed (only tiny deviation)
+    if abs(y_sum - 1.0) > 1e-15 and y_sum > EPS:
+        y_all /= y_sum
+
+    return y_all
 
 
 class InterfaceEquilibriumError(RuntimeError):
@@ -210,10 +359,17 @@ def _psat_vec_all_with_meta(
         else:
             fluid_label = f"{model.cp_backend}::{base_label}"
         val, src, reason = _compute_psat_single(fluid_label, T, model.psat_model, model.T_ref, p_ref)
+
+        # P3: Fail-fast on invalid psat (no silent nan_to_num)
+        if not np.isfinite(val) or val < 0.0:
+            raise InterfaceEquilibriumError(
+                f"Invalid psat for {name} at T={T:.2f}K: psat={val} (source={src})"
+            )
+
         psat[i] = val
         sources.append(src)
         reasons.append(reason)
-    psat = np.nan_to_num(psat, nan=0.0, posinf=0.0, neginf=0.0)
+
     return psat, sources, reasons
 
 
@@ -319,17 +475,19 @@ def compute_interface_equilibrium_full(
     """
     Compute interface equilibrium (Raoult, ideal solution) with full diagnostics.
 
+    P3: Unified constraint flow (no hidden clip/max/cap).
+
     Steps:
-    1) reshape/clean inputs; renormalize Yl_face defensively.
-    2) convert liquid mass -> mole fractions.
-    3) build psat vector (clipped non-negative).
-    4) Raoult partial pressures for condensables (with NaN/neg guards).
-    5) condensable gas mole fractions.
-    6) P2: apply boiling guard to ensure y_bg >= EPS_BG.
-    7) choose background source mole fractions from farfield (not interface) to preserve species ratios.
-    8) allocate background total fraction = 1 - sum(y_cond).
-    9) assemble full gas mole fractions; clip/optional renorm for numerical noise.
-    10) convert mole -> mass fractions for gas.
+    1) Reshape/clean inputs; renormalize Yl_face defensively.
+    2) Convert liquid mass -> mole fractions.
+    3) Build psat vector (P3: fail-fast on invalid psat, no clip).
+    4) Raoult partial pressures for condensables (P3: fail-fast on NaN).
+    5) Condensable gas mole fractions.
+    6) P3: Apply condensable guard (unified constraint).
+    7) P3: Fill background using farfield composition (fail-fast if impossible).
+    8) Assemble full gas mole fractions.
+    9) P3: Finalize simplex (light correction only, fail-fast on large errors).
+    10) Convert mole -> mass fractions for gas.
     """
     Ns_g = len(model.M_g)
     Ns_l = len(model.M_l)
@@ -337,70 +495,82 @@ def compute_interface_equilibrium_full(
     Yl_face = np.asarray(Yl_face, dtype=np.float64).reshape(Ns_l)
     Yg_face = np.asarray(Yg_face, dtype=np.float64).reshape(Ns_g)
 
+    # Clean liquid face (defensive, allow zero)
     yl_sum = float(np.sum(Yl_face))
     if yl_sum <= 0.0:
         Yl_face = np.zeros_like(Yl_face)
     else:
         Yl_face = Yl_face / yl_sum
-    Yg_face = np.nan_to_num(Yg_face, nan=0.0, posinf=0.0, neginf=0.0)
 
     X_liq = mass_to_mole(Yl_face, model.M_l)
 
-    # P0.1: Use meta-tracking version to capture psat source
+    # P3: Compute psat (fail-fast in _psat_vec_all_with_meta, no clip)
     psat, psat_sources, psat_reasons = _psat_vec_all_with_meta(model, Ts)
-    psat = np.clip(psat, 0.0, np.inf)
 
     idxL = model.idx_cond_l
     idxG = model.idx_cond_g
     x_cond = X_liq[idxL] if idxL.size else np.zeros(0, dtype=np.float64)
     p_partial = x_cond * psat[idxL] if idxL.size else np.zeros(0, dtype=np.float64)
-    p_partial = np.nan_to_num(p_partial, nan=0.0, posinf=0.0, neginf=0.0)
-    p_partial = np.clip(p_partial, 0.0, np.inf)
-    sum_partials = float(np.sum(p_partial))
+
+    # P3: Fail-fast on NaN partial pressures (no nan_to_num)
+    if not np.all(np.isfinite(p_partial)):
+        raise InterfaceEquilibriumError(
+            f"Non-finite partial pressure at Ts={Ts:.6g}, Pg={Pg:.6g}"
+        )
 
     Pg_safe = max(float(Pg), 1.0)
-    # P2: Removed old 0.995*Pg cap - now using _apply_boiling_guard as sole constraint
     y_cond = p_partial / Pg_safe if idxG.size else np.zeros(0, dtype=np.float64)
 
-    # P2: Boiling guard - ensure background species have minimum mole fraction
-    y_cond, ys_cap_hit, y_bg_total_guard = _apply_boiling_guard(y_cond, EPS_BG)
-    y_cond_sum = float(np.sum(y_cond))
+    # P3: Apply condensable guard (unified constraint, sole authority over condensables)
+    # Check environment variable for smooth guard (default: hard guard)
+    use_smooth_guard = os.environ.get("DROPLET_SMOOTH_GUARD", "0") in ("1", "true", "True", "TRUE")
+    y_cond, guard_meta = _apply_condensable_guard(y_cond, boundary=1.0 - EPS_BG, smooth=use_smooth_guard)
+    ys_cap_hit = guard_meta["ys_cap_hit"]
+    y_cond_sum = guard_meta["y_cond_sum"]
+
+    # P3: Compute background total (no max, direct from guarded y_cond_sum)
+    y_bg_total = 1.0 - y_cond_sum
 
     mask_bg = np.ones(Ns_g, dtype=bool)
     mask_bg[idxG] = False
 
-    # Use farfield composition for background species ratio (not interface composition)
-    # This prevents closure species (e.g., N2) from being incorrectly compressed to zero
-    # when condensable species (e.g., NC12H26) becomes large at the interface.
-    # Interface composition may have closure species artificially set to ~0 after reconstruction.
-    X_source = model.Xg_farfield
+    # P3: Fill background using unified function (fail-fast if farfield bg=0)
+    y_bg = _fill_background(
+        y_bg_total=y_bg_total,
+        X_farfield_background=model.Xg_farfield,
+        idx_bg=mask_bg,
+        Ns_g=Ns_g,
+    )
 
-    X_bg = np.where(mask_bg, X_source, 0.0)
+    # Calculate X_bg_norm for diagnostics (normalized farfield background)
+    X_bg = np.where(mask_bg, model.Xg_farfield, 0.0)
     s_bg = float(np.sum(X_bg))
-    if s_bg > EPS:
-        X_bg_norm = X_bg / s_bg
-    else:
-        X_bg_norm = np.zeros_like(X_bg)
-        if np.any(mask_bg):
-            X_bg_norm[mask_bg] = 1.0 / np.sum(mask_bg)
+    X_bg_norm = X_bg / s_bg if s_bg > EPS else np.zeros(Ns_g, dtype=np.float64)
 
-    y_bg_total = max(1.0 - float(np.sum(y_cond)), 0.0)
-    y_bg = y_bg_total * X_bg_norm
+    # Calculate sum of partial pressures for diagnostics
+    sum_partials = float(np.sum(p_partial))
 
+    # Assemble full gas mole fractions
     y_all = np.zeros(Ns_g, dtype=np.float64)
     if idxG.size:
         y_all[idxG] = y_cond
     y_all[mask_bg] = y_bg[mask_bg]
-    y_all = np.nan_to_num(y_all, nan=0.0, posinf=0.0, neginf=0.0)
-    y_all = np.clip(y_all, 0.0, 1.0)
-    s_all = float(np.sum(y_all))
-    if s_all > EPS and not np.isclose(s_all, 1.0, rtol=1e-12, atol=1e-12):
-        y_all /= s_all
 
+    # P3: Finalize simplex (light correction only, no hard clip)
+    y_all = _finalize_simplex(y_all, tol_neg=1e-14, tol_sum=1e-10)
+
+    # Convert mole -> mass fractions
     Yg_eq = mole_to_mass(y_all, model.M_g)
+
+    # P3: Defensive renormalize mass fractions (should be ~1 already)
     s_Yg = float(np.sum(Yg_eq))
-    if s_Yg > EPS and not np.isclose(s_Yg, 1.0, rtol=1e-12, atol=1e-12):
-        Yg_eq = Yg_eq / s_Yg
+    if abs(s_Yg - 1.0) > 1e-12:
+        if s_Yg > EPS:
+            Yg_eq /= s_Yg
+        else:
+            raise InterfaceEquilibriumError(
+                f"Yg_eq sum near zero: {s_Yg:.6e} at Ts={Ts:.6g}, Pg={Pg:.6g}"
+            )
 
     # P2: Build meta dict with source tracking (P2: no fallback, only coolprop or clausius)
     if all(src == "coolprop" for src in psat_sources):
