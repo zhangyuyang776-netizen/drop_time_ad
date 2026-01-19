@@ -35,6 +35,7 @@ from core.types import (
     CaseConfig,
     CaseConventions,
     CaseCoolProp,
+    CaseCustomSat,
     CaseDiscretization,
     CaseEquilibrium,
     CaseGeometry,
@@ -218,11 +219,20 @@ def _load_case_config(cfg_path: str) -> CaseConfig:
         backend=cp_raw.get("backend", "HEOS"),
         fluids=list(cp_raw.get("fluids", [])),
     )
+    # P4: Load custom saturation configuration
+    custom_sat_raw = eq_raw.get("custom_sat", {})
+    custom_sat_cfg = CaseCustomSat(
+        model=custom_sat_raw.get("model", "mm_integral_watson"),
+        params_file=custom_sat_raw.get("params_file", ""),
+    )
     eq_cfg = CaseEquilibrium(
         method=eq_raw.get("method", "raoult_psat"),
         psat_model=eq_raw.get("psat_model", "coolprop"),
         condensables_gas=list(eq_raw.get("condensables_gas", [])),
         coolprop=coolprop_cfg,
+        # P4: Custom saturation support
+        sat_source=eq_raw.get("sat_source", "coolprop"),
+        custom_sat=custom_sat_cfg,
     )
     iface_raw = phys_raw.get("interface", {})
     interface_cfg = CaseInterface(
