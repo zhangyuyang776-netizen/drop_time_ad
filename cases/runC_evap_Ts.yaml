@@ -40,11 +40,10 @@ physics:
     Ts_fixed: 300.0          # unused when bc_mode=equilibrium
     equilibrium:
       method: "raoult_psat"
-      psat_model: "coolprop"
       condensables_gas: ["NC12H26"]
-      coolprop:
-        backend: "HEOS"
-        fluids: ["n-Dodecane"]
+  liquid:
+    backend: p2db
+    db_file: "../properties/data/liquid_props_db.yaml"
 
 species:
   gas_balance_species: "N2"

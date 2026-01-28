@@ -41,11 +41,10 @@ physics:
     Ts_fixed: 300.0
     equilibrium:
       method: "raoult_psat"
-      psat_model: "coolprop"
       condensables_gas: ["NC7H16"]
-      coolprop:
-        backend: "HEOS"
-        fluids: ["n-Heptane"]
+  liquid:
+    backend: p2db
+    db_file: "../properties/data/liquid_props_db.yaml"
 
 species:
   gas_balance_species: "N2"

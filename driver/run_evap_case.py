@@ -34,7 +34,7 @@ from core.types import (
     CaseChecks,
     CaseConfig,
     CaseConventions,
-    CaseCoolProp,
+    CaseLiquid,
     CaseDiscretization,
     CaseEquilibrium,
     CaseGeometry,
@@ -96,7 +96,7 @@ def _normalize_backend(backend: Optional[str]) -> Optional[str]:
 def _load_case_backend_phase_a(cfg_path: str) -> dict:
     """Lightweight YAML load to decide backend/bootstrapping."""
     cfg_file = Path(cfg_path).expanduser().resolve()
-    raw = yaml.safe_load(cfg_file.read_text()) or {}
+    raw = yaml.safe_load(_read_yaml_text(cfg_file)) or {}
     nonlinear_raw = raw.get("nonlinear", {}) or {}
     solver_raw = raw.get("solver", {}) or {}
     linear_raw = solver_raw.get("linear", {}) or {}
@@ -183,10 +183,17 @@ def _resolve_path(base: Path, value: str | Path) -> Path:
     return path if path.is_absolute() else (base / path).resolve()
 
 
+def _read_yaml_text(cfg_file: Path) -> str:
+    try:
+        return cfg_file.read_text(encoding="utf-8-sig")
+    except UnicodeDecodeError:
+        return cfg_file.read_text()
+
+
 def _load_case_config(cfg_path: str) -> CaseConfig:
     """Load YAML file into CaseConfig with nested dataclasses."""
     cfg_file = Path(cfg_path).expanduser().resolve()
-    raw = yaml.safe_load(cfg_file.read_text())
+    raw = yaml.safe_load(_read_yaml_text(cfg_file))
     base = cfg_file.parent
 
     case_cfg = CaseMeta(**raw["case"])
@@ -213,16 +220,33 @@ def _load_case_config(cfg_path: str) -> CaseConfig:
             "Config key physics.interface.equilibrium.background_fill has been removed; "
             "interface equilibrium now always uses interface_noncondensables."
         )
-    cp_raw = eq_raw.get("coolprop", {})
-    coolprop_cfg = CaseCoolProp(
-        backend=cp_raw.get("backend", "HEOS"),
-        fluids=list(cp_raw.get("fluids", [])),
-    )
+    allowed_eq_keys = {
+        "method",
+        "condensables_gas",
+        "Ts_guard_dT",
+        "Ts_guard_width_K",
+        "Ts_sat_eps_K",
+        "eps_bg",
+        "sat_tol_enter",
+        "sat_tol_exit",
+        "regime_lock_max",
+    }
+    unknown_eq_keys = set(eq_raw.keys()) - allowed_eq_keys
+    if unknown_eq_keys:
+        raise ValueError(
+            "Unsupported equilibrium keys in physics.interface.equilibrium: "
+            f"{sorted(unknown_eq_keys)}. Use p2db-only equilibrium config."
+        )
     eq_cfg = CaseEquilibrium(
         method=eq_raw.get("method", "raoult_psat"),
-        psat_model=eq_raw.get("psat_model", "coolprop"),
         condensables_gas=list(eq_raw.get("condensables_gas", [])),
-        coolprop=coolprop_cfg,
+        Ts_guard_dT=float(eq_raw.get("Ts_guard_dT", 3.0)),
+        Ts_guard_width_K=float(eq_raw.get("Ts_guard_width_K", 0.5)),
+        Ts_sat_eps_K=float(eq_raw.get("Ts_sat_eps_K", 0.01)),
+        eps_bg=float(eq_raw.get("eps_bg", 1.0e-5)),
+        sat_tol_enter=float(eq_raw.get("sat_tol_enter", 1.0e-3)),
+        sat_tol_exit=float(eq_raw.get("sat_tol_exit", 5.0e-3)),
+        regime_lock_max=int(eq_raw.get("regime_lock_max", 1)),
     )
     iface_raw = phys_raw.get("interface", {})
     interface_cfg = CaseInterface(
@@ -230,6 +254,11 @@ def _load_case_config(cfg_path: str) -> CaseConfig:
         bc_mode=iface_raw.get("bc_mode", "Ts_fixed"),
         Ts_fixed=float(iface_raw.get("Ts_fixed", 300.0)),
         equilibrium=eq_cfg,
+    )
+    liquid_raw = phys_raw.get("liquid", {}) or {}
+    liquid_cfg = CaseLiquid(
+        backend=str(liquid_raw.get("backend", "p2db")),
+        db_file=str(liquid_raw.get("db_file", "")),
     )
     physics_cfg = CasePhysics(
         model=phys_raw.get("model", "droplet_1d_spherical_noChem"),
@@ -244,6 +273,7 @@ def _load_case_config(cfg_path: str) -> CaseConfig:
         include_Rd=phys_raw.get("include_Rd", True),
         stefan_velocity=phys_raw.get("stefan_velocity", True),
         interface=interface_cfg,
+        liquid=liquid_cfg,
     )
 
     species_raw = raw["species"]
@@ -407,6 +437,18 @@ def _load_case_config(cfg_path: str) -> CaseConfig:
         verbose=bool(nonlinear_raw.get("verbose", False)),
         log_every=int(nonlinear_raw.get("log_every", 5)),
         smoke=bool(nonlinear_raw.get("smoke", False)),  # P3.5-5-1: Load smoke field
+        sanitize_mode=str(nonlinear_raw.get("sanitize_mode", "penalty")),
+        penalty_value=float(nonlinear_raw.get("penalty_value", 1.0e20)),
+        penalty_scope=str(nonlinear_raw.get("penalty_scope", "interface_only")),
+        ts_linesearch_cap=bool(nonlinear_raw.get("ts_linesearch_cap", True)),
+        ts_linesearch_alpha=float(nonlinear_raw.get("ts_linesearch_alpha", 0.8)),
+        ts_upper_mode=str(nonlinear_raw.get("ts_upper_mode", "tbub_last")),
+        ls_max_dTs=float(nonlinear_raw.get("ls_max_dTs", 0.2)),
+        ls_max_dmpp_rel=float(nonlinear_raw.get("ls_max_dmpp_rel", 0.05)),
+        ls_max_dmpp_ref=float(nonlinear_raw.get("ls_max_dmpp_ref", 1.0e-4)),
+        ls_shrink=float(nonlinear_raw.get("ls_shrink", 0.5)),
+        enable_vi_bounds=bool(nonlinear_raw.get("enable_vi_bounds", False)),
+        Ts_lower=float(nonlinear_raw.get("Ts_lower", 250.0)),
     )
 
     remap_raw = raw.get("remap", {}) or {}

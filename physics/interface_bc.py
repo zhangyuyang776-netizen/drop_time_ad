@@ -30,6 +30,7 @@ from typing import Any, Dict, List, Mapping, Optional, Tuple
 
 import numpy as np
 
+from core.logging_utils import is_root_rank
 from core.types import CaseConfig, Grid1D, State, Props
 from core.layout import UnknownLayout
 from physics.energy_flux import split_energy_flux_cond_diff_single
@@ -170,6 +171,37 @@ def build_interface_coeffs(
     if phys.include_Rd and not has_Rd:
         _require_block(layout, "Rd")
 
+    # Regime (evap/sat) from equilibrium meta, if available
+    regime = "evap"
+    regime_locked = False
+    sum_x_psat_over_P = float("nan")
+    tbub_val = float("nan")
+    ts_pin_val = float("nan")
+    if eq_result is not None and isinstance(eq_result, dict):
+        meta = eq_result.get("meta", {})
+        if isinstance(meta, dict):
+            regime = str(meta.get("regime", regime) or regime)
+            regime_locked = bool(meta.get("regime_locked", False))
+            try:
+                sum_x_psat_over_P = float(
+                    meta.get("sum_x_psat_over_P", meta.get("sum_y_cond_raw", meta.get("psat_over_P", float("nan"))))
+                )
+            except Exception:
+                sum_x_psat_over_P = float("nan")
+            try:
+                tbub_val = float(meta.get("Tbub", float("nan")))
+            except Exception:
+                tbub_val = float("nan")
+            try:
+                ts_pin_val = float(meta.get("Ts_hard", float("nan")))
+            except Exception:
+                ts_pin_val = float("nan")
+    diag["regime"] = regime
+    diag["regime_locked"] = regime_locked
+    diag["sum_x_psat_over_P"] = sum_x_psat_over_P
+    use_sat_regime = bool(regime in ("sat", "boil") and has_mpp and np.isfinite(tbub_val))
+    diag["regime_use_sat"] = use_sat_regime
+
     # Global unknown indices (no manual offsets)
     if has_Ts:
         idx_Ts = layout.idx_Ts()
@@ -182,23 +214,57 @@ def build_interface_coeffs(
         idx_mpp = layout.idx_mpp()
         diag["idx_mpp"] = idx_mpp
 
-        ts_row, ts_diag = _build_Ts_row(
-            grid=grid,
-            state=state,
-            props=props,
-            layout=layout,
-            cfg=cfg,
-            eq_result=eq_result,
-            il_global=il_global,
-            ig_global=ig_global,
-            il_local=il_local,
-            ig_local=ig_local,
-            iface_f=iface_f,
-            idx_Ts=idx_Ts,
-            idx_mpp=idx_mpp,
-        )
-        rows.append(ts_row)
-        diag.update(ts_diag)
+        if use_sat_regime:
+            # Saturation regime:
+            # - Pin Ts to a feasible upper target (prefer Ts_hard from equilibrium meta to avoid
+            #   violating VI bounds / trial-state caps).
+            # - Replace the Stefan (mpp) equation by the interface energy balance (solve mpp from energy).
+            ts_energy_row, ts_diag = _build_Ts_row(
+                grid=grid,
+                state=state,
+                props=props,
+                layout=layout,
+                cfg=cfg,
+                eq_result=eq_result,
+                il_global=il_global,
+                ig_global=ig_global,
+                il_local=il_local,
+                ig_local=ig_local,
+                iface_f=iface_f,
+                idx_Ts=idx_Ts,
+                idx_mpp=idx_mpp,
+            )
+            Ts_pin = float(ts_pin_val) if np.isfinite(ts_pin_val) else float(tbub_val)
+            ts_sat_row, ts_sat_diag = _build_Ts_sat_row(idx_Ts=idx_Ts, Ts_pin=Ts_pin, Tbub=tbub_val)
+            # Use energy equation as mpp row
+            mpp_energy_row = InterfaceRow(
+                row=idx_mpp,
+                cols=list(ts_energy_row.cols),
+                vals=list(ts_energy_row.vals),
+                rhs=float(ts_energy_row.rhs),
+            )
+            rows.append(ts_sat_row)
+            rows.append(mpp_energy_row)
+            diag.update(ts_diag)
+            diag.update(ts_sat_diag)
+        else:
+            ts_row, ts_diag = _build_Ts_row(
+                grid=grid,
+                state=state,
+                props=props,
+                layout=layout,
+                cfg=cfg,
+                eq_result=eq_result,
+                il_global=il_global,
+                ig_global=ig_global,
+                il_local=il_local,
+                ig_local=ig_local,
+                iface_f=iface_f,
+                idx_Ts=idx_Ts,
+                idx_mpp=idx_mpp,
+            )
+            rows.append(ts_row)
+            diag.update(ts_diag)
 
     if has_mpp:
         if "idx_mpp" not in diag:
@@ -220,7 +286,9 @@ def build_interface_coeffs(
             iface_f=iface_f,
             idx_mpp=idx_mpp,
         )
-        rows.append(mpp_row)
+        # In sat regime, mpp equation is replaced by energy row above; keep evap diag only
+        if not use_sat_regime:
+            rows.append(mpp_row)
         diag.update(mpp_diag)
 
     if has_Rd:
@@ -294,6 +362,25 @@ def build_interface_coeffs(
     return coeffs
 
 
+def _build_Ts_sat_row(idx_Ts: int, *, Ts_pin: float, Tbub: float) -> Tuple[InterfaceRow, Dict[str, Any]]:
+    """
+    Saturation regime: pin Ts to a feasible target Ts_pin.
+
+    We prefer Ts_pin = Ts_hard (= Tbub - Ts_sat_eps_K) to stay consistent with the equilibrium
+    cap and any VI/linesearch bounds applied to Ts in the nonlinear solve.
+    """
+    Ts_pin = float(Ts_pin)
+    row = InterfaceRow(row=idx_Ts, cols=[idx_Ts], vals=[1.0], rhs=Ts_pin)
+    diag_update = {
+        "Ts_sat": {
+            "Tbub": float(Tbub),
+            "Ts_pin": Ts_pin,
+            "equation": "Ts - Ts_pin = 0",
+        }
+    }
+    return row, diag_update
+
+
 def _build_Ts_row(
     grid: Grid1D,
     state: State,
@@ -353,7 +440,7 @@ def _build_Ts_row(
         logger.error("Failed to access liquid thermal conductivity k_l at cell %d: %s", il_local, exc)
         raise
 
-    L_v = _get_latent_heat(props, cfg)
+    L_v, latent_source = _get_latent_heat(props, cfg, eq_result)
 
     # Unknown indices near the interface
     idx_Tg = layout.idx_Tg(ig_local)
@@ -487,6 +574,7 @@ def _build_Ts_row(
             "k_g": k_g,
             "k_l": k_l,
             "L_v": L_v,
+            "latent_source": latent_source,
             "coeffs": {
                 "Tg": coeff_Tg,
                 "Ts": coeff_Ts,
@@ -663,24 +751,49 @@ def _build_mpp_row(
 
     return InterfaceRow(row=idx_mpp, cols=cols, vals=vals, rhs=rhs), diag_update
 
-def _get_latent_heat(props: Props, cfg: CaseConfig) -> float:
-    """Resolve latent heat L_v; prefer props if available, else cfg fallback."""
+def _get_latent_heat(
+    props: Props, cfg: CaseConfig, eq_result: EqResultLike
+) -> Tuple[float, str]:
+    """Resolve latent heat L_v; prefer eq_result if provided, else props/cfg."""
+    if eq_result is not None and "meta" in eq_result:
+        meta = eq_result.get("meta", {})
+        hvap_source = str(meta.get("hvap_source", "") or "")
+        hvap_val = meta.get("hvap_balance", meta.get("hvap"))
+        if hvap_source == "p2db" and hvap_val is not None:
+            try:
+                val = float(hvap_val)
+            except Exception:
+                val = float("nan")
+            if np.isfinite(val) and val > 0.0:
+                return val, "eq_result.p2db"
+        if hvap_source:
+            cand = getattr(props, "h_vap_if", None)
+            if cand is not None:
+                try:
+                    val = float(cand)
+                except Exception:
+                    val = float("nan")
+                if np.isfinite(val) and val > 0.0:
+                    return val, hvap_source
+
     candidates = (
-        getattr(props, "h_vap_if", None),
-        getattr(props, "lv", None),
-        getattr(props, "latent_heat", None),
+        ("props.h_vap_if", getattr(props, "h_vap_if", None)),
+        ("props.lv", getattr(props, "lv", None)),
+        ("props.latent_heat", getattr(props, "latent_heat", None)),
     )
-    for cand in candidates:
+    for name, cand in candidates:
         if cand is None:
             continue
         try:
-            return float(cand)
+            val = float(cand)
         except Exception:
             continue
+        return val, name
 
     L_v_cfg = getattr(cfg.physics, "latent_heat_default", None)
     if L_v_cfg is not None:
-        return float(L_v_cfg)
+        val = float(L_v_cfg)
+        return val, "cfg.latent_heat_default"
 
     raise ValueError("Latent heat L_v not provided in props or cfg.physics.latent_heat_default.")
 

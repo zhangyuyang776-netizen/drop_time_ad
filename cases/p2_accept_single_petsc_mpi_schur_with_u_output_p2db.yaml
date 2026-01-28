@@ -49,15 +49,13 @@ physics:
     equilibrium:
       method: "raoult_psat"
       condensables_gas: ["NC12H26"]
-      # P4 Stage 2: Switch to custom saturation model (Millán-Merino + Watson)
-      custom_sat:
-        model: "mm_integral_watson"
-        params_file: "mechanism/liquid_sat_params.yaml"
-
+      Ts_guard_dT: 3.0
+      eps_bg: 1.0e-12
 
   liquid:
     backend: p2db
     db_file: "../properties/data/liquid_props_db.yaml"
+
 
 species:
   gas_balance_species: "N2"
@@ -125,6 +123,9 @@ nonlinear:
   residual_scale_floor: 1.0e-12
   verbose: false
   log_every: 10
+  enable_vi_bounds: true
+  Ts_lower: 250.0
+  ts_upper_mode: "tbub_last"
 
 remap:
   post_correct_interface: false

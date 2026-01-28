@@ -67,15 +67,11 @@ physics:
     equilibrium:
       # Equilibrium method (current implementation: "raoult_psat").
       method: "raoult_psat"
-      # psat model: "auto" | "coolprop" | "clausius".
-      psat_model: "coolprop"
       # Condensable gas species (mechanism names).
       condensables_gas: ["NC12H26", "NC7H16"]
-      coolprop:
-        # CoolProp backend (e.g., "HEOS").
-        backend: "HEOS"
-        # CoolProp fluid labels aligned with liq_species (same order).
-        fluids: ["n-Dodecane", "n-Heptane"]
+  liquid:
+    backend: p2db
+    db_file: "../properties/data/liquid_props_db.yaml"
 
 species:
   # Gas closure species (must be in mechanism species list).
@@ -83,7 +79,7 @@ species:
   # Mechanism phase name used by Cantera (from mech.yaml).
   gas_mechanism_phase: "gas"
 
-  # Liquid species names (CoolProp fluids).
+  # Liquid species names (p2db entries).
   liq_species: ["n-Dodecane", "n-Heptane"]
   # Liquid closure species (must be in liq_species).
   liq_balance_species: "n-Dodecane"

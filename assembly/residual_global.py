@@ -20,12 +20,139 @@ import numpy as np
 from assembly.build_system_SciPy import build_transport_system
 from core.logging_utils import is_root_rank
 from properties.compute_props import compute_props, get_or_build_models
-from properties.equilibrium import build_equilibrium_model, compute_interface_equilibrium
+from properties.equilibrium import (
+    InterfaceEquilibriumError,
+    build_equilibrium_model,
+    interface_equilibrium,
+    decide_regime,
+)
 from solvers.nonlinear_context import NonlinearContext
 
 logger = logging.getLogger(__name__)
 
 _SANITIZE_Y = bool(int(os.environ.get("DROPLET_SANITIZE_Y", "1")))
+_SANITIZE_STRICT = bool(int(os.environ.get("DROPLET_SANITIZE_STRICT", "1")))
+
+
+def _ctx_tag(ctx: NonlinearContext) -> str:
+    step = getattr(ctx, "step", "NA")
+    t_old = getattr(ctx, "t_old", "NA")
+    dt = getattr(ctx, "dt", "NA")
+    return f"step={step} t={t_old} dt={dt}"
+
+
+def _get_penalty_cfg(cfg) -> tuple[str, float, str]:
+    nl = getattr(cfg, "nonlinear", None)
+    mode = str(getattr(nl, "sanitize_mode", "penalty")).strip().lower()
+    if mode not in ("penalty", "abort"):
+        mode = "penalty"
+    penalty_value = float(getattr(nl, "penalty_value", 1.0e20))
+    penalty_scope = str(getattr(nl, "penalty_scope", "interface_only")).strip().lower()
+    if penalty_scope not in ("interface_only", "all"):
+        penalty_scope = "interface_only"
+    return mode, penalty_value, penalty_scope
+
+
+def _record_penalty(ctx: NonlinearContext, info: Dict[str, Any]) -> None:
+    meta = getattr(ctx, "meta", None)
+    if meta is None or not isinstance(meta, dict):
+        return
+    meta["penalty_count"] = int(meta.get("penalty_count", 0)) + 1
+    meta["penalty_last"] = dict(info)
+
+
+def _require_finite_array(name: str, arr: np.ndarray, *, ctx: NonlinearContext, stage: str) -> None:
+    if arr.size == 0:
+        return
+    if not np.all(np.isfinite(arr)):
+        mn = float(np.nanmin(arr))
+        mx = float(np.nanmax(arr))
+        raise ValueError(f"[{stage}] Non-finite {name} ({_ctx_tag(ctx)}): min={mn:.6g} max={mx:.6g}")
+
+
+def _require_finite_scalar(name: str, val: float, *, ctx: NonlinearContext, stage: str) -> None:
+    if not np.isfinite(val):
+        raise ValueError(f"[{stage}] Non-finite {name} ({_ctx_tag(ctx)}): {val!r}")
+
+
+def _validate_mass_fractions(
+    name: str,
+    Y: np.ndarray,
+    *,
+    ctx: NonlinearContext,
+    stage: str,
+    enforce_sum: bool,
+    sum_tol: float,
+    min_Y: float,
+) -> None:
+    if Y.size == 0:
+        return
+    _require_finite_array(name, Y, ctx=ctx, stage=stage)
+    ymin = float(np.min(Y))
+    if ymin < min_Y - 1.0e-12:
+        raise ValueError(
+            f"[{stage}] {name} has values below min_Y={min_Y:.3e} ({_ctx_tag(ctx)}): min={ymin:.6g}"
+        )
+    if enforce_sum:
+        s = np.sum(Y, axis=0)
+        if not np.all(np.isfinite(s)):
+            raise ValueError(f"[{stage}] Non-finite {name} sum ({_ctx_tag(ctx)})")
+        max_err = float(np.max(np.abs(s - 1.0)))
+        if max_err > sum_tol:
+            raise ValueError(
+                f"[{stage}] {name} sum off by {max_err:.3e} (tol={sum_tol:.3e}) ({_ctx_tag(ctx)})"
+            )
+
+
+def _validate_state_before_residual(state: State, cfg, *, ctx: NonlinearContext, stage: str) -> None:
+    _require_finite_array("Tg", np.asarray(state.Tg, dtype=np.float64), ctx=ctx, stage=stage)
+    _require_finite_array("Tl", np.asarray(state.Tl, dtype=np.float64), ctx=ctx, stage=stage)
+    _require_finite_scalar("Ts", float(state.Ts), ctx=ctx, stage=stage)
+    _require_finite_scalar("mpp", float(state.mpp), ctx=ctx, stage=stage)
+    _require_finite_scalar("Rd", float(state.Rd), ctx=ctx, stage=stage)
+
+    checks = getattr(cfg, "checks", None)
+    enforce_sum = bool(getattr(checks, "enforce_sumY", True))
+    sum_tol = float(getattr(checks, "sumY_tol", 1.0e-10))
+    min_Y = float(getattr(checks, "min_Y", 0.0))
+    _validate_mass_fractions(
+        "Yg", np.asarray(state.Yg, dtype=np.float64), ctx=ctx, stage=stage, enforce_sum=enforce_sum, sum_tol=sum_tol, min_Y=min_Y
+    )
+    _validate_mass_fractions(
+        "Yl", np.asarray(state.Yl, dtype=np.float64), ctx=ctx, stage=stage, enforce_sum=enforce_sum, sum_tol=sum_tol, min_Y=min_Y
+    )
+
+
+def _validate_props_before_residual(props: Props, *, ctx: NonlinearContext, stage: str) -> None:
+    for name, arr in (
+        ("rho_g", props.rho_g),
+        ("cp_g", props.cp_g),
+        ("k_g", props.k_g),
+        ("rho_l", props.rho_l),
+        ("cp_l", props.cp_l),
+        ("k_l", props.k_l),
+    ):
+        _require_finite_array(name, np.asarray(arr, dtype=np.float64), ctx=ctx, stage=stage)
+        if arr.size and np.any(arr <= 0.0):
+            mn = float(np.min(arr))
+            raise ValueError(f"[{stage}] {name} has non-positive entries ({_ctx_tag(ctx)}): min={mn:.6g}")
+
+    if props.D_g is not None:
+        _require_finite_array("D_g", np.asarray(props.D_g, dtype=np.float64), ctx=ctx, stage=stage)
+    if props.D_l is not None:
+        _require_finite_array("D_l", np.asarray(props.D_l, dtype=np.float64), ctx=ctx, stage=stage)
+    if props.h_g is not None:
+        _require_finite_array("h_g", np.asarray(props.h_g, dtype=np.float64), ctx=ctx, stage=stage)
+    if props.h_gk is not None:
+        _require_finite_array("h_gk", np.asarray(props.h_gk, dtype=np.float64), ctx=ctx, stage=stage)
+    if props.h_l is not None:
+        _require_finite_array("h_l", np.asarray(props.h_l, dtype=np.float64), ctx=ctx, stage=stage)
+    if props.psat_l is not None:
+        _require_finite_array("psat_l", np.asarray(props.psat_l, dtype=np.float64), ctx=ctx, stage=stage)
+    if props.hvap_l is not None:
+        _require_finite_array("hvap_l", np.asarray(props.hvap_l, dtype=np.float64), ctx=ctx, stage=stage)
+    if props.h_vap_if is not None:
+        _require_finite_scalar("h_vap_if", float(props.h_vap_if), ctx=ctx, stage=stage)
 
 
 def _sanitize_mass_fractions(Y: np.ndarray, eps: float = 1.0e-30) -> np.ndarray:
@@ -56,13 +183,49 @@ def _sanitize_state_Yg(state: State) -> tuple[State, int]:
     return state_s, n_fix
 
 
-def _penalty_residual(u: np.ndarray, layout, reason: Exception, *, scale: float = 1.0e8) -> tuple[np.ndarray, Dict[str, Any]]:
+def _penalty_residual(
+    u: np.ndarray,
+    layout,
+    reason: Exception,
+    *,
+    scale: float = 1.0e20,
+    scope: str = "interface_only",
+    ctx: NonlinearContext | None = None,
+    stage: str = "",
+    extra: Dict[str, Any] | None = None,
+) -> tuple[np.ndarray, Dict[str, Any]]:
     u = np.asarray(u, dtype=np.float64)
-    res = np.full_like(u, scale)
+    res = np.zeros_like(u)
+    scope_norm = str(scope or "interface_only").strip().lower()
+
+    if scope_norm == "interface_only":
+        blocks = [b for b in ("Ts", "mpp", "Rd") if layout.has_block(b)]
+        if not blocks:
+            res[:] = float(scale)
+        else:
+            for b in blocks:
+                sl = layout.block_slice(b)
+                res[sl] = float(scale)
+    else:
+        res[:] = float(scale)
+
     res_norm_2 = float(np.linalg.norm(res))
     res_norm_inf = float(np.linalg.norm(res, ord=np.inf))
+    penalty_diag = {
+        "penalty_used": True,
+        "penalty_scope": scope_norm,
+        "penalty_value": float(scale),
+        "penalty_stage": str(stage),
+        "penalty_reason": str(reason),
+    }
+    if isinstance(extra, dict):
+        penalty_diag.update(extra)
+    if ctx is not None:
+        _record_penalty(ctx, penalty_diag)
+
     diag: Dict[str, Any] = {
         "assembly": {"penalty": True, "error": str(reason)},
+        "penalty": dict(penalty_diag),
         "residual_norm_2": res_norm_2,
         "residual_norm_inf": res_norm_inf,
         "u_min": float(np.min(u)) if u.size else np.nan,
@@ -131,7 +294,71 @@ def _get_or_build_eq_model(
     eq_model = build_equilibrium_model(cfg, Ns_g=Ns_g, Ns_l=Ns_l, M_g=M_g, M_l=M_l)
     meta["eq_model"] = eq_model
     meta["eq_model_key"] = key
+    try:
+        specs = [eq_model.p2db.get_params(name) for name in eq_model.liq_names]
+        tc_min = float(min(float(spec["Tc"]) for spec in specs))
+        if np.isfinite(tc_min):
+            meta.setdefault("tc_min", tc_min)
+    except Exception:
+        pass
+    try:
+        meta.setdefault("Ts_guard_dT", float(getattr(eq_model, "Ts_guard_dT", 3.0)))
+    except Exception:
+        pass
     return eq_model
+
+
+def _update_iface_regime(ctx: NonlinearContext, eq_result: dict, cfg) -> None:
+    """
+    Apply hysteresis-based regime switching and persist in ctx.meta.
+
+    Regimes: "evap" (default) or "sat".
+    """
+    if not isinstance(eq_result, dict):
+        return
+    meta = eq_result.get("meta")
+    if meta is None or not isinstance(meta, dict):
+        return
+
+    s_raw = meta.get("sum_x_psat_over_P")
+    if s_raw is None:
+        s_raw = meta.get("sum_y_cond_raw", meta.get("psat_over_P", float("nan")))
+
+    try:
+        s_val = float(s_raw)
+    except Exception:
+        s_val = float("nan")
+    if not np.isfinite(s_val):
+        return
+
+    eq_cfg = getattr(getattr(getattr(cfg, "physics", None), "interface", None), "equilibrium", None)
+    tol_enter = float(getattr(eq_cfg, "sat_tol_enter", 1.0e-3)) if eq_cfg is not None else 1.0e-3
+    tol_exit = float(getattr(eq_cfg, "sat_tol_exit", 5.0e-3)) if eq_cfg is not None else 5.0e-3
+    max_switch = int(getattr(eq_cfg, "regime_lock_max", 1)) if eq_cfg is not None else 1
+
+    prev = str(ctx.meta.get("iface_regime", "evap")).strip().lower()
+    switch_count = int(ctx.meta.get("iface_regime_switch_count", 0))
+    new, would_switch = decide_regime(s_val, prev, tol_enter=tol_enter, tol_exit=tol_exit)
+
+    switched = False
+    locked = False
+    if new != prev:
+        if switch_count < max_switch:
+            ctx.meta["iface_regime"] = new
+            ctx.meta["iface_regime_switch_count"] = switch_count + 1
+            switched = True
+        else:
+            locked = True
+            ctx.meta["iface_regime_locked"] = True
+            new = prev
+    else:
+        ctx.meta.setdefault("iface_regime", prev)
+
+    meta["sum_x_psat_over_P"] = float(s_val)
+    meta["regime"] = new
+    meta["regime_switched"] = bool(switched)
+    meta["regime_locked"] = bool(locked)
+    meta["regime_switch_count"] = int(ctx.meta.get("iface_regime_switch_count", 0))
 
 
 def _closure_clamp_diag(
@@ -243,14 +470,23 @@ def build_transport_system_from_ctx(
             Yg_face = np.asarray(state_props.Yg[:, ig_if], dtype=np.float64)
             Yl_shape = tuple(Yl_face.shape)
             Yg_shape = tuple(Yg_face.shape)
-            Yg_eq, y_cond, psat = compute_interface_equilibrium(
+            # P4: Use interface_equilibrium to get full diagnostics including meta
+            eq = interface_equilibrium(
                 eq_model,
                 Ts=Ts_if,
                 Pg=Pg_if,
                 Yl_face=Yl_face,
                 Yg_face=Yg_face,
             )
-            eq_result = {"Yg_eq": np.asarray(Yg_eq), "y_cond": np.asarray(y_cond), "psat": np.asarray(psat)}
+            eq_result = {
+                "Yg_eq": np.asarray(eq.Yg_eq),
+                "y_cond": np.asarray(eq.y_cond),
+                "psat": np.asarray(eq.psat),
+                "meta": dict(eq.meta),  # P4: Preserve meta for source tracking
+            }
+            Yg_eq = eq_result["Yg_eq"]
+            y_cond = eq_result["y_cond"]
+            psat = eq_result["psat"]
 
             # P0.2: NaN/Inf sentinel - catch non-finite values immediately
             psat_arr = np.asarray(psat)
@@ -297,31 +533,19 @@ def build_transport_system_from_ctx(
             y_cond_sum = float(np.sum(y_cond))
             psat_val = float(np.asarray(psat).reshape(-1)[0]) if np.size(psat) > 0 else float("nan")
             ctx.meta["eq_result_cache"] = dict(eq_result)
+            try:
+                _update_iface_regime(ctx, eq_result, cfg)
+            except Exception:
+                pass
         except Exception as exc:
             exc_type = type(exc).__name__
             exc_msg = str(exc)
-            # P0.1: Enhanced structured logging for eq failure (rank0 only)
-            if is_root_rank() and cache is not None:
-                logger.warning(
-                    "eq_fail step=%s t=%s Ts_if=%.6g Pg_if=%.6g Yl_shape=%s Yg_shape=%s "
-                    "y_cond_sum=%.6g psat=%.6g eq_source=%s exc=%s: %s",
-                    getattr(ctx, "step", "NA"),
-                    getattr(ctx, "t_old", "NA"),
-                    Ts_if,
-                    Pg_if,
-                    Yl_shape,
-                    Yg_shape,
-                    y_cond_sum,
-                    psat_val,
-                    "cached",
-                    exc_type,
-                    exc_msg,
-                )
-            if cache is not None:
-                logger.warning("compute_interface_equilibrium failed; using cached eq_result: %s", exc)
-                eq_result = cache
-            else:
-                raise
+            # P1: Record failure reason to ctx.meta
+            ctx.meta["eq_last_error"] = f"{exc_type}: {exc_msg}"
+            # P1: Fail-fast - no cache fallback
+            raise InterfaceEquilibriumError(
+                f"compute_interface_equilibrium failed at Ts={Ts_if:.6g}, Pg={Pg_if:.6g}"
+            ) from exc
 
     result = build_transport_system(
         cfg=cfg,
@@ -384,6 +608,7 @@ def build_global_residual(
     state_old = ctx.state_old
     props_old = ctx.props_old
     dt = float(ctx.dt)
+    sanitize_mode, penalty_value, penalty_scope = _get_penalty_cfg(cfg)
 
     try:
         state_guess = ctx.make_state(u)
@@ -408,6 +633,27 @@ def build_global_residual(
         state_props.Tl = np.maximum(state_props.Tl, t_min_cfg)
     if Ts_clamped:
         state_props.Ts = t_min_cfg
+
+    if _SANITIZE_STRICT:
+        try:
+            _validate_state_before_residual(state_props, cfg, ctx=ctx, stage="pre_props")
+        except Exception as exc:
+            if sanitize_mode == "penalty":
+                extra = {
+                    "Ts_trial": float(state_props.Ts),
+                    "stage": "pre_props",
+                }
+                return _penalty_residual(
+                    u,
+                    layout,
+                    exc,
+                    scale=penalty_value,
+                    scope=penalty_scope,
+                    ctx=ctx,
+                    stage="pre_props",
+                    extra=extra,
+                )
+            raise
 
     debug = os.environ.get("DROPLET_PETSC_DEBUG", "0") == "1"
     debug_once = os.environ.get("DROPLET_PETSC_DEBUG_ONCE", "1") == "1"
@@ -469,7 +715,39 @@ def build_global_residual(
         props, props_extras = compute_props(cfg, grid, state_props)
         props_source = "state_guess_clamped" if (Tg_clamped or Tl_clamped or Ts_clamped) else "state_guess"
         _dbg_log_Y("AFTER_PROPS_AFTER_RESIDUAL", state_props)
+        if _SANITIZE_STRICT:
+            try:
+                _validate_props_before_residual(props, ctx=ctx, stage="post_props")
+            except Exception as exc:
+                if sanitize_mode == "penalty":
+                    extra = {"stage": "post_props"}
+                    return _penalty_residual(
+                        u,
+                        layout,
+                        exc,
+                        scale=penalty_value,
+                        scope=penalty_scope,
+                        ctx=ctx,
+                        stage="post_props",
+                        extra=extra,
+                    )
+                raise
     except Exception as exc:
+        if _SANITIZE_STRICT and isinstance(exc, ValueError):
+            msg = str(exc)
+            if msg.startswith("[pre_props]") or msg.startswith("[post_props]"):
+                if sanitize_mode == "penalty":
+                    return _penalty_residual(
+                        u,
+                        layout,
+                        exc,
+                        scale=penalty_value,
+                        scope=penalty_scope,
+                        ctx=ctx,
+                        stage="sanitize",
+                        extra={"stage": "sanitize"},
+                    )
+                raise
         if strict_props:
             raise
         logger.exception("compute_props failed in residual_global; attempting sanitize+retry.")
@@ -483,9 +761,27 @@ def build_global_residual(
                 _dbg_log_Y("AFTER_PROPS_SANITIZED", state_sanitized)
             except Exception as exc2:
                 logger.exception("compute_props failed after sanitize retry.")
-                return _penalty_residual(u, layout, exc2)
+                return _penalty_residual(
+                    u,
+                    layout,
+                    exc2,
+                    scale=penalty_value,
+                    scope=penalty_scope,
+                    ctx=ctx,
+                    stage="props_retry",
+                    extra={"stage": "props_retry"},
+                )
         else:
-            return _penalty_residual(u, layout, exc)
+            return _penalty_residual(
+                u,
+                layout,
+                exc,
+                scale=penalty_value,
+                scope=penalty_scope,
+                ctx=ctx,
+                stage="props",
+                extra={"stage": "props"},
+            )
 
     eq_result = None
     eq_model = None
@@ -511,14 +807,24 @@ def build_global_residual(
             Yg_face = np.asarray(state_props.Yg[:, ig_if], dtype=np.float64)
             Yl_shape = tuple(Yl_face.shape)
             Yg_shape = tuple(Yg_face.shape)
-            Yg_eq, y_cond, psat = compute_interface_equilibrium(
+            # P4: Use interface_equilibrium to get full diagnostics including meta
+            eq = interface_equilibrium(
                 eq_model,
                 Ts=Ts_if,
                 Pg=Pg_if,
                 Yl_face=Yl_face,
                 Yg_face=Yg_face,
             )
-            eq_result = {"Yg_eq": np.asarray(Yg_eq), "y_cond": np.asarray(y_cond), "psat": np.asarray(psat)}
+            eq_result = {
+                "Yg_eq": np.asarray(eq.Yg_eq),
+                "y_cond": np.asarray(eq.y_cond),
+                "psat": np.asarray(eq.psat),
+                "meta": dict(eq.meta),  # P4: Preserve meta for source tracking
+                "x_cond": np.asarray(eq.x_cond) if hasattr(eq, "x_cond") else np.asarray([]),
+            }
+            Yg_eq = eq_result["Yg_eq"]
+            y_cond = eq_result["y_cond"]
+            psat = eq_result["psat"]
 
             # P0.2: NaN/Inf sentinel - catch non-finite values immediately
             psat_arr = np.asarray(psat)
@@ -566,32 +872,57 @@ def build_global_residual(
             psat_val = float(np.asarray(psat).reshape(-1)[0]) if np.size(psat) > 0 else float("nan")
             eq_source = "computed"
             ctx.meta["eq_result_cache"] = dict(eq_result)
+            try:
+                if isinstance(eq_result, dict) and eq_model is not None:
+                    idxL = getattr(eq_model, "idx_cond_l", np.array([], dtype=int))
+                    x_cond = np.asarray(eq_result.get("x_cond", []), dtype=np.float64)
+                    psat_arr = np.asarray(eq_result.get("psat", []), dtype=np.float64)
+                    if idxL.size and x_cond.size and psat_arr.size:
+                        s_raw = float(np.sum(x_cond * psat_arr[idxL]) / max(Pg_if, 1.0e-30))
+                    else:
+                        s_raw = float("nan")
+                    eq_result["meta"]["sum_x_cond_raw"] = s_raw
+                    eq_result["meta"]["psat_over_P"] = s_raw
+            except Exception:
+                pass
+            try:
+                tbub_val = float(eq_result.get("meta", {}).get("Tbub", float("nan")))
+                if np.isfinite(tbub_val):
+                    ctx.meta["tbub_last"] = tbub_val
+                    ctx.meta["Ts_guard_dT"] = float(eq_result.get("meta", {}).get("Ts_guard_dT", ctx.meta.get("Ts_guard_dT", 3.0)))
+            except Exception:
+                pass
+            try:
+                _update_iface_regime(ctx, eq_result, cfg)
+            except Exception:
+                pass
         except Exception as exc:
             exc_type = type(exc).__name__
             exc_msg = str(exc)
-            # P0.1: Enhanced structured logging for eq failure (rank0 only)
-            if is_root_rank() and cache is not None:
-                logger.warning(
-                    "eq_fail step=%s t=%s Ts_if=%.6g Pg_if=%.6g Yl_shape=%s Yg_shape=%s "
-                    "y_cond_sum=%.6g psat=%.6g eq_source=%s exc=%s: %s",
-                    getattr(ctx, "step", "NA"),
-                    getattr(ctx, "t_old", "NA"),
-                    Ts_if,
-                    Pg_if,
-                    Yl_shape,
-                    Yg_shape,
-                    y_cond_sum,
-                    psat_val,
-                    "cached",
-                    exc_type,
-                    exc_msg,
+            # P1: Record failure reason to ctx.meta
+            ctx.meta["eq_last_error"] = f"{exc_type}: {exc_msg}"
+            if sanitize_mode == "penalty":
+                extra = {
+                    "stage": "eq",
+                    "Ts_trial": Ts_if,
+                    "Pg_trial": Pg_if,
+                    "eq_exc_type": exc_type,
+                    "eq_exc_msg": exc_msg,
+                }
+                return _penalty_residual(
+                    u,
+                    layout,
+                    exc,
+                    scale=penalty_value,
+                    scope=penalty_scope,
+                    ctx=ctx,
+                    stage="eq",
+                    extra=extra,
                 )
-            if cache is not None:
-                logger.warning("compute_interface_equilibrium failed; using cached eq_result: %s", exc)
-                eq_result = cache
-                eq_source = "cached"
-            else:
-                raise
+            # P1: Fail-fast - no cache fallback
+            raise InterfaceEquilibriumError(
+                f"compute_interface_equilibrium failed at Ts={Ts_if:.6g}, Pg={Pg_if:.6g}"
+            ) from exc
     else:
         eq_source = "disabled"
 
@@ -862,3 +1193,69 @@ def residual_petsc(
             Fg.axpy(1.0, Fg_out)
         return Fg
     return Fg_out
+
+
+# ============================================================================
+# TEST-ONLY: Smoke test helper for P2 boiling guard verification
+# ============================================================================
+
+
+def _smoke_call_interface_equilibrium(cfg, layout, grid, state_props, eq_model=None):
+    """
+    Test-only helper to call interface equilibrium from residual path.
+
+    P2 Smoke Test: Verifies boiling guard is applied in actual residual assembly path.
+
+    Args:
+        cfg: CaseConfig with physics.include_mpp=True
+        layout: UnknownLayout with mpp block
+        grid: Grid1D with Nl, Ng
+        state_props: State with Yl, Yg, Ts
+        eq_model: Optional EquilibriumModel (will build if None)
+
+    Returns:
+        EquilibriumResult with meta containing ys_cap_hit, y_bg_total, etc.
+
+    Raises:
+        InterfaceEquilibriumError: If equilibrium computation fails
+    """
+    # Check needs_eq condition (same as residual_global logic)
+    phys = cfg.physics
+    needs_eq = bool(getattr(phys, "include_mpp", False) and layout.has_block("mpp"))
+
+    if not needs_eq:
+        raise ValueError(
+            "Smoke test requires include_mpp=True and layout with 'mpp' block"
+        )
+
+    # Build equilibrium model if not provided
+    if eq_model is None:
+        Ns_g = len(cfg.species.gas_species_full)
+        Ns_l = len(cfg.species.liq_species)
+        M_g = _build_molar_mass_from_cfg(
+            list(cfg.species.gas_species_full), Ns_g, cfg.species.molar_mass
+        )
+        M_l = _build_molar_mass_from_cfg(
+            list(cfg.species.liq_species), Ns_l, cfg.species.molar_mass
+        )
+        eq_model = build_equilibrium_model(cfg, Ns_g, Ns_l, M_g, M_l)
+
+    # Extract interface conditions (same as residual_global)
+    il_if = grid.Nl - 1
+    ig_if = 0
+    Ts_if = float(state_props.Ts)
+    Pg_if = float(getattr(cfg.initial, "P_inf", 101325.0))
+    Yl_face = np.asarray(state_props.Yl[:, il_if], dtype=np.float64)
+    Yg_face = np.asarray(state_props.Yg[:, ig_if], dtype=np.float64)
+
+    # Call interface_equilibrium (not legacy wrapper)
+    # This returns EquilibriumResult with meta containing ys_cap_hit, y_bg_total
+    eq_result = interface_equilibrium(
+        eq_model,
+        Ts=Ts_if,
+        Pg=Pg_if,
+        Yl_face=Yl_face,
+        Yg_face=Yg_face,
+    )
+
+    return eq_result

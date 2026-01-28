@@ -41,11 +41,10 @@ physics:
     Ts_fixed: 300.0  # fixed Ts [K] when bc_mode="Ts_fixed"
     equilibrium:
       method: "raoult_psat"  # options: "raoult_psat"
-      psat_model: "coolprop"  # options: "coolprop"
       condensables_gas: ["NC12H26"]  # condensable gas species (mechanism names)
-      coolprop:
-        backend: "HEOS"  # CoolProp backend (e.g., HEOS)
-        fluids: ["n-Dodecane"]  # CoolProp fluid names
+  liquid:
+    backend: p2db
+    db_file: "../properties/data/liquid_props_db.yaml"
 
 species:
   gas_balance_species: "N2"  # gas closure species name

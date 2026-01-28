@@ -1,0 +1,49 @@
+# Liquid saturation parameters database
+# P4: Custom saturation model (Millán-Merino integral + Watson correlation)
+#
+# Each liquid species requires:
+# - canonical name (primary identifier)
+# - aliases (list of alternative names for matching)
+# - W: molar mass [kg/mol]
+# - Tb_patm: normal boiling point at 1 atm [K]
+# - patm: reference pressure [Pa]
+# - Tc: critical temperature [K]
+# - Pc: critical pressure [Pa]
+# - Lb_Tb: latent heat of vaporization at Tb [J/mol]
+# - watson_n: Watson correlation exponent (typically 0.38)
+#
+# Data sources:
+# - NIST WebBook: https://webbook.nist.gov/chemistry/
+# - PubChem: https://pubchem.ncbi.nlm.nih.gov/
+
+species:
+  n-Dodecane:
+    # Canonical name: n-Dodecane (unbranched C12 alkane)
+    aliases:
+      - "NC12H26"
+      - "C12H26"
+      - "nC12H26"
+      - "Dodecane"
+      - "n-dodecane"
+
+    # Molecular properties
+    W: 0.1703348          # kg/mol (170.3348 g/mol)
+
+    # Saturation properties at 1 atm
+    Tb_patm: 489.41       # K (normal boiling point)
+    patm: 101325.0        # Pa (standard atmospheric pressure)
+
+    # Critical properties
+    Tc: 658.2             # K (critical temperature, NIST)
+    Pc: 1.82e6            # Pa (critical pressure, ~18 bar, PubChem)
+
+    # Latent heat at Tb
+    Lb_Tb: 44090.0        # J/mol (44.09 kJ/mol, NIST)
+
+    # Watson correlation exponent
+    watson_n: 0.38        # Dimensionless (typical value for hydrocarbons)
+
+    # Notes:
+    # - Tb_patm is the integration lower limit in Millán-Merino formulation
+    # - Lb_Tb is used with Watson to extrapolate L(T) for T != Tb
+    # - watson_n = 0.38 is empirical, can be tuned per species if needed

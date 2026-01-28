@@ -44,11 +44,10 @@ physics:
     # Placeholders for when equilibrium/interface BC is wired in
     equilibrium:
       method: "raoult_psat"
-      psat_model: "coolprop"           # auto|coolprop|clausius
       condensables_gas: ["NC12H26"]    # gas-phase names corresponding to liquid species
-      coolprop:
-        backend: "HEOS"
-        fluids: ["n-Dodecane"]
+  liquid:
+    backend: p2db
+    db_file: "../properties/data/liquid_props_db.yaml"
 
 species:
   # Gas species list should be read from mechanism (paths.mechanism_dir/paths.gas_mech)
