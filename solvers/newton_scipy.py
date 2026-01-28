@@ -14,6 +14,7 @@ from scipy import optimize
 
 from solvers.nonlinear_context import NonlinearContext
 from assembly.residual_global import build_global_residual, residual_only
+from solvers.linesearch_ts_guard import cap_ts_in_u, estimate_ts_hard
 from solvers.nonlinear_types import NonlinearDiagnostics, NonlinearSolveResult
 
 logger = logging.getLogger(__name__)
@@ -48,6 +49,9 @@ def solve_nonlinear_scipy(
     log_every = int(getattr(nl, "log_every", 5))
     if log_every < 1:
         log_every = 1
+    ts_cap_enabled = bool(getattr(nl, "ts_linesearch_cap", True))
+    ts_cap_alpha = float(getattr(nl, "ts_linesearch_alpha", 0.8))
+    ts_upper_mode = str(getattr(nl, "ts_upper_mode", "tbub_last"))
 
     t_old = float(getattr(ctx, "t_old", 0.0))
     t_new = t_old + float(getattr(ctx, "dt", 0.0))
@@ -131,6 +135,28 @@ def solve_nonlinear_scipy(
             u_phys = ctx.from_scaled_u(u_s)
         else:
             u_phys = u_s
+
+        if ts_cap_enabled and ctx.layout.has_block("Ts"):
+            ts_upper = estimate_ts_hard(ctx, mode=ts_upper_mode)
+            ts_idx = int(ctx.layout.idx_Ts())
+            ts_before = float(u_phys[ts_idx])
+            if ts_upper is not None and np.isfinite(ts_upper) and np.isfinite(ts_before):
+                ts_upper = ts_before + ts_cap_alpha * (float(ts_upper) - ts_before)
+            u_phys, capped, ts_after = cap_ts_in_u(u_phys, idx_Ts=ts_idx, Ts_upper=ts_upper)
+            if capped:
+                meta = ctx.meta
+                meta["n_lambda_cap_ts"] = int(meta.get("n_lambda_cap_ts", 0)) + 1
+                if ts_upper is not None and np.isfinite(ts_upper):
+                    delta = float(ts_before - float(ts_upper))
+                    meta["max_Ts_trial_minus_upper"] = max(
+                        float(meta.get("max_Ts_trial_minus_upper", -np.inf)), delta
+                    )
+                meta["ts_cap_last"] = {
+                    "ts_before": ts_before,
+                    "ts_after": ts_after,
+                    "ts_upper": float(ts_upper) if ts_upper is not None else float("nan"),
+                    "alpha": ts_cap_alpha,
+                }
 
         res_raw, diag = build_global_residual(u_phys, ctx)
         res = res_raw
@@ -243,5 +269,11 @@ def solve_nonlinear_scipy(
         res_norm_inf=res_norm_inf,
         history_res_inf=history,
         message=msg,
+        extra={
+            "n_penalty_residual": int(ctx.meta.get("penalty_count", 0)),
+            "penalty_last_reason": str((ctx.meta.get("penalty_last", {}) or {}).get("penalty_reason", "")),
+            "n_lambda_cap_ts": int(ctx.meta.get("n_lambda_cap_ts", 0)),
+            "max_Ts_trial_minus_upper": float(ctx.meta.get("max_Ts_trial_minus_upper", np.nan)),
+        },
     )
     return NonlinearSolveResult(u=u_final, diag=diag)

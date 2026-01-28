@@ -17,7 +17,8 @@ import numpy as np
 
 from core.types import CaseConfig, Grid1D, Props, State
 from properties.gas import GasPropertiesModel, compute_gas_props
-from properties.liquid import LiquidPropertiesModel, compute_liquid_props
+from properties.liquid import LiquidPropertiesModel
+from properties.liquid_props import get_liquid_props
 
 FloatArray = np.ndarray
 
@@ -58,7 +59,7 @@ def build_props_from_state(
         Ns_l = len(liq_model.liq_names)
         if state.Yl.shape != (Ns_l, Nl):
             raise ValueError(f"Liquid mass fractions shape {state.Yl.shape} != ({Ns_l},{Nl})")
-        liq_core, liq_extra = compute_liquid_props(liq_model, state, grid)
+        liq_core, liq_extra = get_liquid_props(cfg, grid, state, model=liq_model)
         rho_l = liq_core["rho_l"]
         cp_l = liq_core["cp_l"]
         k_l = liq_core["k_l"]

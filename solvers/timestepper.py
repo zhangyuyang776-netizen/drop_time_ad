@@ -35,7 +35,7 @@ from assembly.build_system_petsc import (
     build_transport_system_petsc_bridge,
     build_transport_system_petsc_native,
 )
-from properties.equilibrium import build_equilibrium_model, compute_interface_equilibrium
+from properties.equilibrium import build_equilibrium_model, compute_interface_equilibrium, decide_regime
 from properties.compute_props import compute_props, get_or_build_models
 from physics.interface_bc import EqResultLike
 from solvers.nonlinear_context import build_nonlinear_context_for_step
@@ -371,6 +371,7 @@ def _advance_one_step_nonlinear_scipy(
                 "message": nl_result.diag.message,
                 "extra": dict(getattr(nl_result.diag, "extra", {}) or {}),
             }
+            _update_interface_diag_from_nonlinear(diag)
         except Exception:
             pass
         _write_interface_diag_safe(cfg=cfg, diag=diag)  # P0.3: Write diag for nonlinear failure
@@ -398,6 +399,7 @@ def _advance_one_step_nonlinear_scipy(
                 "message": nl_result.diag.message,
                 "extra": dict(getattr(nl_result.diag, "extra", {}) or {}),
             }
+            _update_interface_diag_from_nonlinear(diag)
         except Exception:
             pass
         return StepResult(
@@ -453,6 +455,7 @@ def _advance_one_step_nonlinear_scipy(
             "message": nl_result.diag.message,
             "extra": dict(getattr(nl_result.diag, "extra", {}) or {}),
         }
+        _update_interface_diag_from_nonlinear(diag)
     except Exception:
         pass
 
@@ -731,14 +734,47 @@ def _build_step_diagnostics(
         "m_dot": float("nan"),  # Will be computed below
         "psat": float("nan"),
         "sum_y_cond": float("nan"),
+        "sum_y_cond_raw": float("nan"),
+        "psat_over_P": float("nan"),
         "eq_source": "none",
         "eq_exc_type": "",
         "eq_exc_msg": "",
         # P0.1: New diagnostic fields for source tracking
         "psat_source": "",
         "hvap_source": "",
+        "latent_source": "",
+        "L_v": float("nan"),
+        # P5-D: energy balance terms (interface sign convention)
+        "q_g": float("nan"),
+        "q_l": float("nan"),
+        "q_diff": float("nan"),
+        "latent": float("nan"),
+        "energy_res": float("nan"),
+        "energy_sign": "",
         "fallback_reason": "",
         "finite_ok": "",
+        # P2: Guard diagnostics
+        "Ts_eff": float("nan"),
+        "Tbub": float("nan"),
+        "guard_active": "",
+        "clamp_active": "",
+        "eps_bg": "",
+        # P5+: penalty and line-search guard diagnostics
+        "penalty_used": "",
+        "penalty_reason": "",
+        "n_penalty_residual": "",
+        "n_lambda_cap_ts": "",
+        "max_Ts_trial_minus_upper": "",
+        "ls_lambda": "",
+        "ls_clip_ts": "",
+        "ls_clip_mpp": "",
+        "ls_shrink_count": "",
+        "regime": "",
+        "regime_locked": "",
+        "sum_x_psat_over_P": float("nan"),
+        "Ts_upper": float("nan"),
+        "Ts_guard": float("nan"),
+        "Ts_hard": float("nan"),
     }
 
     # Compute m_dot = 4*pi*Rd^2*mpp
@@ -767,10 +803,37 @@ def _build_step_diagnostics(
             interface_diag["hvap_source"] = meta.get("hvap_source", "")
             interface_diag["fallback_reason"] = meta.get("fallback_reason", "")
             interface_diag["finite_ok"] = str(meta.get("finite_ok", ""))
+            interface_diag["Ts_eff"] = meta.get("Ts_eff", float("nan"))
+            interface_diag["Tbub"] = meta.get("Tbub", float("nan"))
+            interface_diag["guard_active"] = str(meta.get("guard_active", ""))
+            interface_diag["clamp_active"] = str(meta.get("clamp_active", ""))
+            interface_diag["eps_bg"] = meta.get("eps_bg", "")
+            interface_diag["sum_y_cond_raw"] = meta.get("sum_y_cond_raw", float("nan"))
+            interface_diag["psat_over_P"] = meta.get("psat_over_P", float("nan"))
+            interface_diag["sum_x_psat_over_P"] = meta.get(
+                "sum_x_psat_over_P", meta.get("sum_y_cond_raw", float("nan"))
+            )
+            interface_diag["regime"] = meta.get("regime", "")
+            interface_diag["regime_locked"] = meta.get("regime_locked", "")
+            interface_diag["Ts_upper"] = meta.get("Ts_upper", float("nan"))
+            interface_diag["Ts_guard"] = meta.get("Ts_guard", meta.get("Ts_upper", float("nan")))
+            interface_diag["Ts_hard"] = meta.get("Ts_hard", float("nan"))
         except Exception as exc:
             interface_diag["eq_source"] = "failed"
             interface_diag["eq_exc_type"] = type(exc).__name__
             interface_diag["eq_exc_msg"] = str(exc)
+
+    if "Ts_energy" in diag_sys:
+        ts_energy = diag_sys["Ts_energy"]
+        interface_diag["L_v"] = float(ts_energy.get("L_v", np.nan))
+        interface_diag["latent_source"] = str(ts_energy.get("latent_source", ""))
+        balance = ts_energy.get("balance_into_interface", {})
+        interface_diag["q_g"] = float(balance.get("q_g_in", np.nan))
+        interface_diag["q_l"] = float(balance.get("q_l_in", np.nan))
+        interface_diag["q_diff"] = float(balance.get("q_diff_in", np.nan))
+        interface_diag["latent"] = float(balance.get("q_lat", np.nan))
+        interface_diag["energy_res"] = float(balance.get("balance_eq", np.nan))
+        interface_diag["energy_sign"] = str(balance.get("sign_convention", ""))
 
     extra["interface_diag"] = interface_diag
 
@@ -802,6 +865,31 @@ def _apply_nonlinear_diag(diag: StepDiagnostics, nl_diag: Any) -> None:
         diag.nonlinear_n_iter = int(getattr(nl_diag, "n_iter", 0))
         diag.nonlinear_residual_norm = float(getattr(nl_diag, "res_norm_2", np.nan))
         diag.nonlinear_residual_inf = float(getattr(nl_diag, "res_norm_inf", np.nan))
+    except Exception:
+        pass
+
+
+def _update_interface_diag_from_nonlinear(diag: StepDiagnostics) -> None:
+    """Populate interface_diag with nonlinear penalty/linesearch metadata if present."""
+    try:
+        extra = diag.extra or {}
+        iface = extra.get("interface_diag")
+        nl = extra.get("nonlinear", {}) or {}
+        nl_extra = nl.get("extra", {}) if isinstance(nl, dict) else {}
+        if not isinstance(iface, dict) or not isinstance(nl_extra, dict):
+            return
+        n_penalty = int(nl_extra.get("n_penalty_residual", 0))
+        iface["penalty_used"] = str(n_penalty > 0)
+        iface["penalty_reason"] = str(nl_extra.get("penalty_last_reason", ""))
+        iface["n_penalty_residual"] = n_penalty
+        iface["n_lambda_cap_ts"] = int(nl_extra.get("n_lambda_cap_ts", 0))
+        iface["max_Ts_trial_minus_upper"] = float(
+            nl_extra.get("max_Ts_trial_minus_upper", float("nan"))
+        )
+        iface["ls_lambda"] = nl_extra.get("ls_lambda_last", "")
+        iface["ls_clip_ts"] = int(nl_extra.get("ls_clip_ts", 0))
+        iface["ls_clip_mpp"] = int(nl_extra.get("ls_clip_mpp", 0))
+        iface["ls_shrink_count"] = int(nl_extra.get("ls_shrink_count", 0))
     except Exception:
         pass
 
@@ -930,8 +1018,15 @@ def _build_step_diagnostics_fail(
         "eq_exc_msg": message or "",
         "psat_source": "",
         "hvap_source": "",
+        "latent_source": "",
+        "L_v": float("nan"),
         "fallback_reason": "",
         "finite_ok": "False",
+        "Ts_eff": float("nan"),
+        "Tbub": float("nan"),
+        "guard_active": "",
+        "clamp_active": "",
+        "eps_bg": "",
     }
 
     return StepDiagnostics(
@@ -1015,9 +1110,9 @@ def _build_eq_result_for_step(
     """
     Compute interface equilibrium result for the current step.
 
-    P0.1: Now uses compute_interface_equilibrium_full to get meta tracking.
+    P0.1: Now uses interface_equilibrium to get meta tracking.
     """
-    from properties.equilibrium import compute_interface_equilibrium_full
+    from properties.equilibrium import interface_equilibrium
 
     il_if = grid.Nl - 1
     ig_if = 0
@@ -1033,13 +1128,25 @@ def _build_eq_result_for_step(
 
     Pg = float(getattr(cfg.initial, "P_inf", 101325.0))
     # P0.1: Use full version to get meta
-    result = compute_interface_equilibrium_full(
+    result = interface_equilibrium(
         eq_model,
         Ts=Ts,
         Pg=Pg,
         Yl_face=Yl_face,
         Yg_face=Yg_face,
     )
+    try:
+        eq_cfg = cfg.physics.interface.equilibrium
+        tol_enter = float(getattr(eq_cfg, "sat_tol_enter", 1.0e-3))
+        tol_exit = float(getattr(eq_cfg, "sat_tol_exit", 5.0e-3))
+        meta = dict(result.meta)
+        s_raw = meta.get("sum_x_psat_over_P", meta.get("sum_y_cond_raw", meta.get("psat_over_P", float("nan"))))
+        regime, _ = decide_regime(s_raw, None, tol_enter=tol_enter, tol_exit=tol_exit)
+        meta["regime"] = regime
+        meta["sum_x_psat_over_P"] = float(s_raw) if np.isfinite(float(s_raw)) else float("nan")
+        result.meta = meta
+    except Exception:
+        pass
     return {
         "Yg_eq": result.Yg_eq,
         "y_cond": result.y_cond,

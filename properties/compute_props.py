@@ -18,9 +18,9 @@ class _ModelCacheKey:
     gas_phase: str
     P_inf: float
 
-    coolprop_backend: str
-    coolprop_fluids: Tuple[str, ...]
     liq_species: Tuple[str, ...]
+    liquid_backend: str
+    liquid_db_file: str
 
 
 _MODEL_CACHE: Dict[_ModelCacheKey, Tuple[GasPropertiesModel, LiquidPropertiesModel]] = {}
@@ -49,15 +49,16 @@ def _make_model_cache_key(cfg: CaseConfig) -> _ModelCacheKey:
     gas_phase = _get_gas_phase(cfg)
     P_inf = float(cfg.initial.P_inf)
 
-    backend = ""
-    fluids: Tuple[str, ...] = tuple()
+    liquid_backend = "p2db"
+    liquid_db_file = ""
     try:
-        eq_cfg = cfg.physics.interface.equilibrium
-        backend = str(eq_cfg.coolprop.backend or "")
-        fluids = tuple(eq_cfg.coolprop.fluids)
+        liquid_cfg = getattr(cfg.physics, "liquid", None)
+        if liquid_cfg is not None:
+            liquid_backend = str(getattr(liquid_cfg, "backend", "p2db") or "p2db")
+            liquid_db_file = str(getattr(liquid_cfg, "db_file", "") or "")
     except Exception:
-        backend = ""
-        fluids = tuple()
+        liquid_backend = "p2db"
+        liquid_db_file = ""
 
     liq_species = tuple(getattr(cfg.species, "liq_species", []) or [])
 
@@ -65,9 +66,9 @@ def _make_model_cache_key(cfg: CaseConfig) -> _ModelCacheKey:
         gas_mech_path=gas_mech_path,
         gas_phase=gas_phase,
         P_inf=P_inf,
-        coolprop_backend=backend,
-        coolprop_fluids=fluids,
         liq_species=liq_species,
+        liquid_backend=liquid_backend,
+        liquid_db_file=liquid_db_file,
     )
 
 

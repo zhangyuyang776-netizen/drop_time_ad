@@ -40,9 +40,8 @@ def _import_petsc():
 def _import_chemistry():
     try:
         import cantera  # noqa: F401
-        import CoolProp  # noqa: F401
     except Exception as exc:
-        print(f"[ERROR] chemistry backends are required: {exc}", file=sys.stderr)
+        print(f"[ERROR] cantera is required: {exc}", file=sys.stderr)
         raise SystemExit(1)
 
 

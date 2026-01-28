@@ -1,0 +1,168 @@
+version: 2
+units:
+  T: K
+  P: Pa
+  M: kg/mol
+  rho: kg/m3
+  cp: J/(kg*K)
+  mu: Pa*s
+  k: W/(m*K)
+  sigma: N/m
+  hvap: J/kg
+
+liquids:
+  NC7H16:
+    aliases: ["n-Heptane", "NC7", "HEPTANE"]
+    MW: 0.100205
+    Tc: 540.2
+    Pc: 2.74e6
+    Tb_1atm: 371.6
+    T_valid: [250.0, 520.0]
+
+    psat:
+      model: yaws_ln
+      Tmin: 250.0
+      Tmax: 520.0
+      source: fitted_to_baseline
+      ref: baseline_coolprop.npz
+      coeffs:
+        A: 30.3
+        B: -7000.0
+        C: 0.0
+        D: 0.0
+        E: 1.0
+
+    hvap:
+      model: watson
+      Tmin: 250.0
+      Tmax: 520.0
+      source: fitted_to_baseline
+      ref: baseline_coolprop.npz
+      Tref: 371.6
+      Hvap_Tref: 3.15e5
+      n: 0.38
+
+    rho:
+      model: rackett
+      Tmin: 250.0
+      Tmax: 520.0
+      source: fitted_to_baseline
+      ref: baseline_coolprop.npz
+      coeffs:
+        rho_c: 232.0
+        Z_RA: 0.27
+
+    cp:
+      model: poly4
+      Tmin: 250.0
+      Tmax: 520.0
+      source: fitted_to_baseline
+      ref: baseline_coolprop.npz
+      coeffs: [2200.0, 0.0, 0.0, 0.0, 0.0]
+
+    mu:
+      model: andrade
+      Tmin: 250.0
+      Tmax: 520.0
+      source: fitted_to_baseline
+      ref: baseline_coolprop.npz
+      coeffs:
+        A: -14.0
+        B: 2500.0
+        C: 0.0
+
+    k:
+      model: poly2
+      Tmin: 250.0
+      Tmax: 520.0
+      source: fitted_to_baseline
+      ref: baseline_coolprop.npz
+      coeffs: [0.12, 0.0, 0.0]
+
+    sigma:
+      model: crit_power
+      Tmin: 250.0
+      Tmax: 520.0
+      source: fitted_to_baseline
+      ref: baseline_coolprop.npz
+      coeffs:
+        A: 0.055
+        n: 1.26
+
+  NC12H26:
+    aliases: ["n-Dodecane", "NC12", "DODECANE"]
+    MW: 0.170334
+    Tc: 658.2
+    Pc: 1.82e6
+    Tb_1atm: 489.5
+    T_valid: [250.0, 650.0]
+
+    psat:
+      model: yaws_ln
+      Tmin: 250.0
+      Tmax: 650.0
+      source: fitted_to_baseline
+      ref: baseline_coolprop.npz
+      coeffs:
+        A: 29.9
+        B: -9000.0
+        C: 0.0
+        D: 0.0
+        E: 1.0
+
+    hvap:
+      model: watson
+      Tmin: 250.0
+      Tmax: 650.0
+      source: fitted_to_baseline
+      ref: baseline_coolprop.npz
+      Tref: 489.5
+      Hvap_Tref: 2.60e5
+      n: 0.38
+
+    rho:
+      model: rackett
+      Tmin: 250.0
+      Tmax: 650.0
+      source: fitted_to_baseline
+      ref: baseline_coolprop.npz
+      coeffs:
+        rho_c: 235.0
+        Z_RA: 0.27
+
+    cp:
+      model: poly4
+      Tmin: 250.0
+      Tmax: 650.0
+      source: fitted_to_baseline
+      ref: baseline_coolprop.npz
+      coeffs: [2300.0, 0.0, 0.0, 0.0, 0.0]
+
+    mu:
+      model: andrade
+      Tmin: 250.0
+      Tmax: 650.0
+      source: fitted_to_baseline
+      ref: baseline_coolprop.npz
+      coeffs:
+        A: -15.0
+        B: 3200.0
+        C: 0.0
+
+    k:
+      model: poly2
+      Tmin: 250.0
+      Tmax: 650.0
+      source: fitted_to_baseline
+      ref: baseline_coolprop.npz
+      coeffs: [0.13, 0.0, 0.0]
+
+    sigma:
+      model: crit_power
+      Tmin: 250.0
+      Tmax: 650.0
+      source: fitted_to_baseline
+      ref: baseline_coolprop.npz
+      coeffs:
+        A: 0.054
+        n: 1.26

@@ -180,17 +180,24 @@ class CaseDiscretization:
 
 
 @dataclass(slots=True)
-class CaseCoolProp:
-    backend: str = "HEOS"
-    fluids: List[str] = field(default_factory=list)
+class CaseLiquid:
+    """Liquid property backend configuration."""
+    backend: str = "p2db"
+    db_file: str = ""
 
 
 @dataclass(slots=True)
 class CaseEquilibrium:
     method: str = "raoult_psat"
-    psat_model: str = "coolprop"
     condensables_gas: List[str] = field(default_factory=list)
-    coolprop: CaseCoolProp = field(default_factory=CaseCoolProp)
+    Ts_guard_dT: float = 3.0
+    Ts_guard_width_K: float = 0.5
+    Ts_sat_eps_K: float = 0.01
+    eps_bg: float = 1.0e-5
+    sat_tol_enter: float = 1.0e-3
+    sat_tol_exit: float = 5.0e-3
+    regime_lock_max: int = 1
+
 
 
 @dataclass(slots=True)
@@ -226,6 +233,7 @@ class CasePhysics:
     species_convection: bool = False
 
     interface: CaseInterface = field(default_factory=CaseInterface)
+    liquid: CaseLiquid = field(default_factory=CaseLiquid)
 
     def __post_init__(self) -> None:
         if not self.enable_liquid:
@@ -322,6 +330,26 @@ class CaseNonlinear:
 
     # P3.5-5-1: smoke mode for quick SNES smoke tests (limits iterations)
     smoke: bool = False
+
+    # P5+: residual sanitize/penalty controls
+    sanitize_mode: str = "penalty"  # "penalty" or "abort"
+    penalty_value: float = 1.0e20
+    penalty_scope: str = "interface_only"  # "interface_only" or "all"
+
+    # P5+: Ts trial cap / line search guard
+    ts_linesearch_cap: bool = True
+    ts_linesearch_alpha: float = 0.8
+    ts_upper_mode: str = "tbub_last"  # "tbub_last" or "tc_min"
+
+    # P5-G: line-search guard clamps
+    ls_max_dTs: float = 0.2
+    ls_max_dmpp_rel: float = 0.05
+    ls_max_dmpp_ref: float = 1.0e-4
+    ls_shrink: float = 0.5
+
+    # P5+: optional variable bounds (PETSc VI)
+    enable_vi_bounds: bool = False
+    Ts_lower: float = 250.0
 
 
 @dataclass(slots=True)

@@ -29,6 +29,7 @@ from solvers.nonlinear_context import NonlinearContext
 from solvers.nonlinear_types import NonlinearDiagnostics, NonlinearSolveResult
 from solvers.petsc_linear import apply_fieldsplit_subksp_defaults, apply_structured_pc, _normalize_pc_type
 from solvers.petsc_snes import _enable_snes_matrix_free, _finalize_ksp_config, _get_petsc
+from solvers.linesearch_ts_guard import cap_lambda_by_ts, estimate_ts_hard
 
 logger = logging.getLogger(__name__)
 
@@ -220,6 +221,13 @@ def _apply_linesearch_options_from_env(PETSc, prefix: str, default_type: str) ->
                 opts.setValue("snes_linesearch_damping", ls_damping)
             except Exception:
                 opts["snes_linesearch_damping"] = ls_damping
+
+        ls_minlambda = os.environ.get("DROPLET_PETSC_LINESEARCH_MINLAMBDA", "").strip()
+        if ls_minlambda:
+            try:
+                opts.setValue("snes_linesearch_minlambda", ls_minlambda)
+            except Exception:
+                opts["snes_linesearch_minlambda"] = ls_minlambda
     except Exception:
         current = ""
 
@@ -432,6 +440,11 @@ def solve_nonlinear_petsc_parallel(
     log_every = int(getattr(nl_cfg, "log_every", 5))
     if log_every < 1:
         log_every = 1
+    ts_cap_enabled = bool(getattr(nl_cfg, "ts_linesearch_cap", True))
+    ts_cap_alpha = float(getattr(nl_cfg, "ts_linesearch_alpha", 0.8))
+    ts_upper_mode = str(getattr(nl_cfg, "ts_upper_mode", "tbub_last"))
+    enable_vi_bounds = bool(getattr(nl_cfg, "enable_vi_bounds", False))
+    ts_lower = float(getattr(nl_cfg, "Ts_lower", 250.0))
 
     jacobian_mode_raw = "mf"
     if petsc_cfg is not None:
@@ -477,7 +490,9 @@ def solve_nonlinear_petsc_parallel(
     )
 
     snes_type = "newtonls"
-    linesearch_type = os.environ.get("DROPLET_PETSC_LINESEARCH_TYPE", "").strip() or "l2"
+    linesearch_type = os.environ.get("DROPLET_PETSC_LINESEARCH_TYPE", "").strip()
+    if not linesearch_type:
+        linesearch_type = str(getattr(petsc_cfg, "linesearch_type", "bt") if petsc_cfg is not None else "bt")
     snes_monitor = bool(getattr(petsc_cfg, "snes_monitor", False)) if petsc_cfg is not None else False
 
     ksp_type = "gmres"
@@ -1081,8 +1096,195 @@ def solve_nonlinear_petsc_parallel(
     snes.setTolerances(rtol=f_rtol, atol=f_atol, max_it=max_outer_iter)
 
     linesearch_type_eff = _apply_linesearch_options_from_env(PETSc, prefix, linesearch_type)
+    try:
+        opts = PETSc.Options(prefix)
+        cur_min = ""
+        try:
+            cur_min = opts.getString("snes_linesearch_minlambda", default="")
+        except Exception:
+            cur_min = ""
+        if not cur_min:
+            try:
+                opts.setValue("snes_linesearch_minlambda", "1.0e-4")
+            except Exception:
+                opts["snes_linesearch_minlambda"] = "1.0e-4"
+    except Exception:
+        pass
     if DEBUG and world_rank == 0:
         _log_linesearch_options(PETSc, prefix, world_rank)
+
+    # ------------------------------------------------------------------
+    # P5+: Optional Ts line-search cap (post-check)
+    # ------------------------------------------------------------------
+    ls_guard_enabled = ctx.layout.has_block("Ts") or ctx.layout.has_block("mpp")
+    if ls_guard_enabled:
+        try:
+            ls = snes.getLineSearch()
+        except Exception:
+            ls = None
+        if ls is not None:
+            def _set_flag(flag_obj, value: bool) -> None:
+                try:
+                    flag_obj[0] = bool(value)
+                    return
+                except Exception:
+                    pass
+                try:
+                    flag_obj[...] = bool(value)
+                except Exception:
+                    pass
+
+            def _postcheck(ls_obj, X_vec, Y_vec, W_vec, changed_y, changed_w):
+                if dm_mgr is None or ld is None:
+                    return
+                meta = ctx.meta
+                ls_max_dTs = float(getattr(nl_cfg, "ls_max_dTs", 0.2))
+                ls_max_dmpp_rel = float(getattr(nl_cfg, "ls_max_dmpp_rel", 0.05))
+                ls_max_dmpp_ref = float(getattr(nl_cfg, "ls_max_dmpp_ref", 1.0e-4))
+                ls_shrink = float(getattr(nl_cfg, "ls_shrink", 0.5))
+                ts_upper = estimate_ts_hard(ctx, mode=ts_upper_mode)
+
+                try:
+                    lambda_in = float(ls_obj.getLambda())
+                except Exception:
+                    lambda_in = 1.0
+                lambda_out = lambda_in
+
+                idx_ts = None
+                idx_mpp = None
+                if ctx.layout.has_block("Ts"):
+                    idx_ts = int(ld.comp_if.get("Ts", [None])[0]) if "Ts" in ld.comp_if else None
+                if ctx.layout.has_block("mpp"):
+                    idx_mpp = int(ld.comp_if.get("mpp", [None])[0]) if "mpp" in ld.comp_if else None
+
+                from parallel.dm_manager import _dmcomposite_access
+
+                with _dmcomposite_access(dm_mgr.dm, X_vec) as x_parts:
+                    with _dmcomposite_access(dm_mgr.dm, Y_vec) as y_parts:
+                        with _dmcomposite_access(dm_mgr.dm, W_vec) as w_parts:
+                            try:
+                                x_if = x_parts[2]
+                                y_if = y_parts[2]
+                                w_if = w_parts[2]
+                            except Exception:
+                                return
+
+                            if x_if.getSize() == 0:
+                                return
+
+                            x_view, x_mode = _vec_get_array_read(x_if)
+                            y_view, y_mode = _vec_get_array_read(y_if)
+                            try:
+                                x_if_arr = np.asarray(x_view, dtype=np.float64)
+                                y_if_arr = np.asarray(y_view, dtype=np.float64)
+                                w_if_arr = w_if.getArray()
+                            finally:
+                                _vec_restore_array(x_if, x_view, x_mode)
+                                _vec_restore_array(y_if, y_view, y_mode)
+
+                            changed = False
+
+                            # Optional Ts-based lambda cap (prevents overshoot)
+                            if ts_cap_enabled and idx_ts is not None and idx_ts < y_if_arr.size:
+                                Ts = float(x_if_arr[idx_ts])
+                                dTs = float(y_if_arr[idx_ts])
+                                lambda_out, info = cap_lambda_by_ts(
+                                    Ts,
+                                    dTs,
+                                    lambda_in,
+                                    ts_upper,
+                                    alpha=ts_cap_alpha,
+                                )
+                                meta["ls_lambda_last"] = float(lambda_out)
+                                if info.get("capped", False):
+                                    w_if_arr[:] = x_if_arr + lambda_out * y_if_arr
+                                    _set_flag(changed_w, True)
+                                    try:
+                                        ls_obj.setLambda(lambda_out)
+                                    except Exception:
+                                        pass
+                                    meta["n_lambda_cap_ts"] = int(meta.get("n_lambda_cap_ts", 0)) + 1
+                                    ts_trial = float(Ts + lambda_out * dTs)
+                                    if ts_upper is not None and np.isfinite(ts_upper):
+                                        meta["max_Ts_trial_minus_upper"] = max(
+                                            float(meta.get("max_Ts_trial_minus_upper", -np.inf)),
+                                            float(ts_trial - float(ts_upper)),
+                                        )
+                                    meta["lambda_cap_last"] = dict(info)
+
+                            # Apply direct trial-point clamps on W (interface only)
+                            if idx_ts is not None and idx_ts < w_if_arr.size:
+                                Ts_old = float(x_if_arr[idx_ts])
+                                Ts_try = float(w_if_arr[idx_ts])
+                                if np.isfinite(Ts_old) and np.isfinite(Ts_try):
+                                    dTs_try = Ts_try - Ts_old
+                                    if ls_max_dTs > 0.0 and abs(dTs_try) > ls_max_dTs:
+                                        Ts_try = Ts_old + np.sign(dTs_try) * ls_max_dTs
+                                        w_if_arr[idx_ts] = Ts_try
+                                        meta["ls_clip_ts"] = int(meta.get("ls_clip_ts", 0)) + 1
+                                        changed = True
+                                    if ts_upper is not None and np.isfinite(ts_upper) and Ts_try > ts_upper:
+                                        w_if_arr[idx_ts] = float(ts_upper)
+                                        meta["ls_clip_ts"] = int(meta.get("ls_clip_ts", 0)) + 1
+                                        changed = True
+                                else:
+                                    w_if_arr[:] = x_if_arr + float(ls_shrink) * (w_if_arr - x_if_arr)
+                                    meta["ls_shrink_count"] = int(meta.get("ls_shrink_count", 0)) + 1
+                                    changed = True
+
+                            if idx_mpp is not None and idx_mpp < w_if_arr.size:
+                                mpp_old = float(x_if_arr[idx_mpp])
+                                mpp_try = float(w_if_arr[idx_mpp])
+                                if np.isfinite(mpp_old) and np.isfinite(mpp_try):
+                                    dmpp = mpp_try - mpp_old
+                                    max_dmpp = float(ls_max_dmpp_rel) * max(abs(mpp_old), float(ls_max_dmpp_ref))
+                                    if max_dmpp > 0.0 and abs(dmpp) > max_dmpp:
+                                        mpp_try = mpp_old + np.sign(dmpp) * max_dmpp
+                                        w_if_arr[idx_mpp] = mpp_try
+                                        meta["ls_clip_mpp"] = int(meta.get("ls_clip_mpp", 0)) + 1
+                                        changed = True
+                                else:
+                                    w_if_arr[:] = x_if_arr + float(ls_shrink) * (w_if_arr - x_if_arr)
+                                    meta["ls_shrink_count"] = int(meta.get("ls_shrink_count", 0)) + 1
+                                    changed = True
+
+                            if changed:
+                                _set_flag(changed_w, True)
+
+            try:
+                ls.setPostCheck(_postcheck)
+            except Exception:
+                pass
+
+    # ------------------------------------------------------------------
+    # P5+: Optional Ts variable bounds (VI)
+    # ------------------------------------------------------------------
+    xl_bounds = None
+    xu_bounds = None
+    if enable_vi_bounds and ctx.layout.has_block("Ts"):
+        ts_upper = estimate_ts_hard(ctx, mode=ts_upper_mode)
+        if ts_upper is not None and np.isfinite(ts_upper):
+            try:
+                snes.setType("vinewtonrsls")
+            except Exception:
+                pass
+            try:
+                xl_bounds = F.duplicate()
+                xu_bounds = F.duplicate()
+                xl_bounds.set(-1.0e20)
+                xu_bounds.set(1.0e20)
+                idx_ts = int(ctx.layout.idx_Ts())
+                xl_arr = xl_bounds.getArray()
+                xu_arr = xu_bounds.getArray()
+                xl_arr[idx_ts] = float(ts_lower)
+                xu_arr[idx_ts] = float(ts_upper)
+                snes.setVariableBounds(xl_bounds, xu_bounds)
+                ctx.meta["vi_bounds_enabled"] = True
+                ctx.meta["vi_ts_upper"] = float(ts_upper)
+                ctx.meta["vi_ts_lower"] = float(ts_lower)
+            except Exception:
+                xl_bounds = None
+                xu_bounds = None
 
     try:
         snes.setFromOptions()
@@ -1388,6 +1590,19 @@ def solve_nonlinear_petsc_parallel(
         "J_mat_type": j_type,
         "P_mat_type": p_type,
     }
+    try:
+        penalty_last = ctx.meta.get("penalty_last", {}) if isinstance(ctx.meta, dict) else {}
+        extra["n_penalty_residual"] = int(ctx.meta.get("penalty_count", 0))
+        extra["penalty_last_reason"] = str(penalty_last.get("penalty_reason", ""))
+        extra["n_lambda_cap_ts"] = int(ctx.meta.get("n_lambda_cap_ts", 0))
+        extra["max_Ts_trial_minus_upper"] = float(ctx.meta.get("max_Ts_trial_minus_upper", np.nan))
+        extra["vi_bounds_enabled"] = bool(ctx.meta.get("vi_bounds_enabled", False))
+        extra["ls_clip_ts"] = int(ctx.meta.get("ls_clip_ts", 0))
+        extra["ls_clip_mpp"] = int(ctx.meta.get("ls_clip_mpp", 0))
+        extra["ls_shrink_count"] = int(ctx.meta.get("ls_shrink_count", 0))
+        extra["ls_lambda_last"] = ctx.meta.get("ls_lambda_last", "")
+    except Exception:
+        pass
     extra["petsc_options_prefix"] = prefix
     try:
         extra["snes_options_prefix"] = str(snes.getOptionsPrefix() or "")
@@ -1515,6 +1730,16 @@ def solve_nonlinear_petsc_parallel(
     try:
         if P is not None:
             P.destroy()
+    except Exception:
+        pass
+    try:
+        if 'xl_bounds' in locals() and xl_bounds is not None:
+            xl_bounds.destroy()
+    except Exception:
+        pass
+    try:
+        if 'xu_bounds' in locals() and xu_bounds is not None:
+            xu_bounds.destroy()
     except Exception:
         pass
     try:
