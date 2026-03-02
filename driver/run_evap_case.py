@@ -449,6 +449,8 @@ def _load_case_config(cfg_path: str) -> CaseConfig:
         ls_shrink=float(nonlinear_raw.get("ls_shrink", 0.5)),
         enable_vi_bounds=bool(nonlinear_raw.get("enable_vi_bounds", False)),
         Ts_lower=float(nonlinear_raw.get("Ts_lower", 250.0)),
+        Rd_lower=float(nonlinear_raw.get("Rd_lower", 1.0e-12)),
+        mpp_lower=float(nonlinear_raw.get("mpp_lower", float("-inf"))),
     )
 
     remap_raw = raw.get("remap", {}) or {}
@@ -852,6 +854,12 @@ def run_case(
                     getattr(nl_cfg, "krylov_method", "lgmres"),
                     int(getattr(nl_cfg, "max_outer_iter", 0)),
                 )
+            logger.info(
+                "Nonlinear sanitize: mode=%s penalty_value=%.3e penalty_scope=%s",
+                getattr(nl_cfg, "sanitize_mode", "penalty"),
+                float(getattr(nl_cfg, "penalty_value", 1.0e20)),
+                getattr(nl_cfg, "penalty_scope", "interface_only"),
+            )
         else:
             logger.info(
                 "Global nonlinear solve disabled; using linear backend=%s.",
@@ -972,7 +980,7 @@ def run_case(
                 )
                 return 2
 
-            res = advance_one_step_scipy(cfg, grid, layout, state, props, t)
+            res = advance_one_step_scipy(cfg, grid, layout, state, props, t, step_id=step_id)
             _log_step(res, step_id)
             if use_nonlinear and bool(getattr(nl_cfg, "verbose", False)):
                 try:
