@@ -1,0 +1,292 @@
+{
+  "dt": 2e-05,
+  "ls_postcheck_last": null,
+  "message": "SNES diverged (reason=-6)",
+  "mfpc_fd_last_fail": null,
+  "nonlinear_diag": {
+    "converged": false,
+    "extra": {
+      "F_vec_type": "mpi",
+      "J_mat_type": "mffd",
+      "KSP_A_is_P": true,
+      "KSP_A_type": "mpiaij",
+      "KSP_P_type": "mpiaij",
+      "P_mat_type": "mpiaij",
+      "X_local_size": 30,
+      "X_ownership_range": [
+        93,
+        123
+      ],
+      "X_vec_type": "mpi",
+      "comm_kind": "world",
+      "comm_size": 16,
+      "dm_type": "composite",
+      "fd_jacobian_stats": {
+        "col_norm_max": 0.021073648034936592,
+        "col_norm_min": 1.5967359789864033e-06,
+        "diag_damping": 1.0,
+        "min_col_norm": 0.0,
+        "n_cols": 40,
+        "n_suspicious_cols": 0,
+        "suspicious_cols": []
+      },
+      "history_res_inf": [
+        0.008221457980084779
+      ],
+      "jacobian_mode": "mfpc_sparse_fd",
+      "ksp_it": 23,
+      "ksp_its_total": 23,
+      "ksp_operators": {
+        "A_type": "mpiaij",
+        "P_type": "mpiaij"
+      },
+      "ksp_options_prefix": "p3acc_single_",
+      "ksp_reason": 2,
+      "ksp_reason_str": "2",
+      "ksp_type": "gmres",
+      "linesearch_type": "bt",
+      "ls_clip_mpp": 0,
+      "ls_clip_ts": 0,
+      "ls_lambda_last": "",
+      "ls_shrink_count": 0,
+      "max_Ts_trial_minus_upper": NaN,
+      "mfpc_sparse_fd": {
+        "cols_to_perturb": [
+          20,
+          21,
+          22,
+          23,
+          24,
+          25,
+          26,
+          27,
+          28,
+          160,
+          161,
+          162,
+          163,
+          164,
+          165,
+          166,
+          167,
+          168,
+          169,
+          170,
+          171,
+          172,
+          173,
+          174,
+          175,
+          176,
+          177,
+          178,
+          179,
+          180,
+          181,
+          182,
+          183,
+          184,
+          185,
+          186,
+          405,
+          406,
+          407,
+          408
+        ],
+        "drop_tol": 0.0,
+        "eps": 1e-08,
+        "fd_jacobian_stats": {
+          "col_norm_max": 0.021073648034936592,
+          "col_norm_min": 1.5967359789864033e-06,
+          "diag_damping": 1.0,
+          "min_col_norm": 0.0,
+          "n_cols": 40,
+          "n_suspicious_cols": 0,
+          "suspicious_cols": []
+        },
+        "max_diag_abs_local": 0.021073648034936592,
+        "mpi_size": 16,
+        "n_fd_calls": 40,
+        "n_local_rows": 30,
+        "ncolors": 0,
+        "nnz_total_local": 174,
+        "ownership_range": [
+          93,
+          123
+        ],
+        "pattern_local": "LocalJacPattern(rows_global=array([ 93,  94,  95,  96,  97,  98,  99, 100, 101, 102, 103, 104, 105,\n       106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118,\n       119, 120, 121, 122], dtype=int32), indptr=array([  0,   3,   6,  12,  18,  24,  30,  36,  42,  48,  54,  60,  66,\n        72,  78,  84,  90,  96, 102, 108, 114, 120, 126, 132, 138, 144,\n       150, 156, 162, 168, 174]), indices=array([ 64,  93,  94,  93,  94, 123,  89,  95,  99,  96,  97,  98,  95,\n        90,  96,  97,  98, 100,  95,  91,  96,  97,  98, 101,  95,  92,\n        96,  97,  98, 102,  95,  99, 103, 100, 101, 102,  99,  96, 100,\n       101, 102, 104,  99,  97, 100, 101, 102, 105,  99,  98, 100, 101,\n       102, 106,  99, 103, 107, 104, 105, 106, 103, 100, 104, 105, 106,\n       108, 103, 101, 104, 105, 106, 109, 103, 102, 104, 105, 106, 110,\n       103, 107, 111, 108, 109, 110, 107, 104, 108, 109, 110, 112, 107,\n       105, 108, 109, 110, 113, 107, 106, 108, 109, 110, 114, 107, 111,\n       115, 112, 113, 114, 111, 108, 112, 113, 114, 116, 111, 109, 112,\n       113, 114, 117, 111, 110, 112, 113, 114, 118, 111, 115, 119, 116,\n       117, 118, 115, 112, 116, 117, 118, 120, 115, 113, 116, 117, 118,\n       121, 115, 114, 116, 117, 118, 122, 115, 119, 124, 120, 121, 122,\n       119, 116, 120, 121, 122, 125, 119, 117, 120, 121, 122, 126, 119,\n       118, 120, 121, 122, 127], dtype=int32), shape=(423, 423), meta={'nnz_total': 174.0, 'nnz_avg': 5.8, 'nnz_max_row': 6.0, 'n_local_rows': 30.0})",
+        "pattern_nnz_local": 174,
+        "prealloc_nnz_local": 174,
+        "shape": [
+          423,
+          423
+        ]
+      },
+      "n_func_eval": 7,
+      "n_jac_eval": 1,
+      "n_lambda_cap_ts": 0,
+      "n_penalty_residual": 1,
+      "parallel_backend": "petsc_snes_parallel",
+      "pc_structured": {
+        "disable_amat_attempt": {
+          "opt_pc_use_amat": "0",
+          "setFromOptions": "ok",
+          "setUseAmat": "ok",
+          "uses_amat_after": false
+        },
+        "enabled": true,
+        "fieldsplit": {
+          "plan": "bulk_iface",
+          "splits": {
+            "bulk": {
+              "asm_overlap": 1,
+              "asm_subdomains": 1,
+              "ksp_type": "preonly",
+              "pc_type": "asm",
+              "subdomain_ksp_type": "preonly",
+              "subdomain_pc_type": "ilu"
+            },
+            "iface": {
+              "asm_overlap": 1,
+              "asm_subdomains": 1,
+              "ksp_type": "preonly",
+              "pc_type": "asm",
+              "subdomain_ksp_type": "preonly",
+              "subdomain_pc_type": "lu"
+            }
+          },
+          "subksp_error": "getFieldSplitSubKSP failed: Error: error code 73\n[ 3] PCFieldSplitGetSubKSP() at /home/conda/feedstock_root/build_artifacts/petsc_1736236456220/work/src/ksp/pc/impls/fieldsplit/fieldsplit.c:2539\n[ 3] PCFieldSplitGetSubKSP_FieldSplit_Schur() at /home/conda/feedstock_root/build_artifacts/petsc_1736236456220/work/src/ksp/pc/impls/fieldsplit/fieldsplit.c:2030\n[ 3] Object is in wrong state\n[ 3] Must call KSPSetUp() or PCSetUp() before calling PCFieldSplitGetSubKSP(); retry failed: Error: error code 73\n[ 3] PCFieldSplitGetSubKSP() at /home/conda/feedstock_root/build_artifacts/petsc_1736236456220/work/src/ksp/pc/impls/fieldsplit/fieldsplit.c:2539\n[ 3] PCFieldSplitGetSubKSP_FieldSplit_Schur() at /home/conda/feedstock_root/build_artifacts/petsc_1736236456220/work/src/ksp/pc/impls/fieldsplit/fieldsplit.c:2030\n[ 3] Object is in wrong state\n[ 3] Must call KSPSetUp() or PCSetUp() before calling PCFieldSplitGetSubKSP()",
+          "type": "schur"
+        },
+        "fieldsplit_type": "schur",
+        "global": {
+          "pc_type": "fieldsplit"
+        },
+        "ksp_prefix": "p3acc_single_",
+        "options_injected": {
+          "fieldsplit_bulk_ksp_type": "preonly",
+          "fieldsplit_bulk_pc_asm_overlap": "1",
+          "fieldsplit_bulk_pc_type": "asm",
+          "fieldsplit_bulk_sub_ksp_type": "preonly",
+          "fieldsplit_bulk_sub_pc_type": "ilu",
+          "fieldsplit_iface_ksp_type": "preonly",
+          "fieldsplit_iface_pc_asm_overlap": "1",
+          "fieldsplit_iface_pc_type": "asm",
+          "fieldsplit_iface_sub_ksp_type": "preonly",
+          "fieldsplit_iface_sub_pc_type": "lu"
+        },
+        "options_overwritten": {
+          "fieldsplit_bulk_ksp_type": true,
+          "fieldsplit_bulk_pc_asm_overlap": true,
+          "fieldsplit_bulk_pc_type": true,
+          "fieldsplit_bulk_sub_ksp_type": true,
+          "fieldsplit_bulk_sub_pc_type": true,
+          "fieldsplit_iface_ksp_type": true,
+          "fieldsplit_iface_pc_asm_overlap": true,
+          "fieldsplit_iface_pc_type": true,
+          "fieldsplit_iface_sub_ksp_type": true,
+          "fieldsplit_iface_sub_pc_type": true
+        },
+        "options_prefix": "p3acc_single_",
+        "options_skipped_cli": {},
+        "outer_ops": {
+          "A_from_ksp": true,
+          "A_type": "None",
+          "P_from_ksp": true,
+          "P_type": "mpiaij",
+          "should_disable_amat": true
+        },
+        "ownership_range": [
+          93,
+          123
+        ],
+        "ownership_range_source": "arg_P",
+        "schur_fact_type": "lower",
+        "split_names": [
+          "bulk",
+          "iface"
+        ],
+        "split_sizes_local": {
+          "bulk": 30,
+          "iface": 0
+        },
+        "splits": {
+          "bulk": 420,
+          "iface": 3
+        },
+        "sub_defaults": {
+          "by_name": {
+            "bulk": {
+              "ksp_type": "preonly",
+              "pc_asm_overlap": 1,
+              "pc_type": "asm",
+              "subdomain_ksp_type": "preonly",
+              "subdomain_pc_type": "ilu"
+            },
+            "iface": {
+              "ksp_type": "preonly",
+              "pc_asm_overlap": 1,
+              "pc_type": "asm",
+              "subdomain_ksp_type": "preonly",
+              "subdomain_pc_type": "lu"
+            }
+          },
+          "default": {
+            "ksp_type": "preonly",
+            "pc_asm_overlap": 1,
+            "pc_type": "asm",
+            "subdomain_ksp_type": "preonly",
+            "subdomain_pc_type": "ilu"
+          }
+        },
+        "uses_amat": false
+      },
+      "pc_type": "fieldsplit",
+      "pc_type_overridden": false,
+      "penalty_last_phase": "",
+      "penalty_last_reason": "Gas diffusion coeffs too small at cell 2: min(D)=0.000e+00, bad_species=['N2'], total_bad=1",
+      "penalty_last_stage": "props_retry",
+      "petsc_options_prefix": "p3acc_single_",
+      "pmat_info": {
+        "nz_allocated": 2489.0,
+        "nz_used": 2489.0
+      },
+      "snes_iter": 0,
+      "snes_mf_enabled": true,
+      "snes_options_prefix": "p3acc_single_",
+      "snes_reason": -6,
+      "snes_reason_str": "-6",
+      "snes_smoke": {
+        "jacobian_mode_effective": "mfpc_sparse_fd",
+        "jacobian_mode_original": "mfpc_sparse_fd",
+        "max_outer_iter_effective": 20,
+        "max_outer_iter_original": 20,
+        "smoke_enabled": false
+      },
+      "snes_type": "vinewtonrsls",
+      "time_func": 0.10780013259500265,
+      "time_jac": 0.5487008900381625,
+      "time_linear_total": 0.09289719513617456,
+      "time_total": 0.7470175169873983,
+      "vi_bounds_enabled": true
+    },
+    "message": "SNES diverged (reason=-6)",
+    "method": "snes:vinewtonrsls",
+    "n_iter": 0,
+    "res_norm_2": 1.7320508075688775e+20,
+    "res_norm_inf": 1e+20
+  },
+  "penalty_last_reason": null,
+  "penalty_last_stage": null,
+  "snes_last_global": {
+    "f_inf": 0.8173453703154223,
+    "f_nonfinite": false,
+    "f_rank": 0,
+    "phase": "SNES_F_iter0",
+    "x_inf": 1500.0000000000011,
+    "x_nonfinite": false,
+    "x_rank": 15
+  },
+  "step_id": 135,
+  "t_old": 0.0026800000000000057
+}
