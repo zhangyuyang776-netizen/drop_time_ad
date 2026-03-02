@@ -50,6 +50,75 @@ def _normalize_options_prefix(prefix: str | None) -> str:
     return p
 
 
+def _mpi_any(comm, flag: bool) -> bool:
+    try:
+        from mpi4py import MPI  # type: ignore
+
+        mpicomm = comm.tompi4py()
+        return bool(mpicomm.allreduce(bool(flag), op=MPI.LOR))
+    except Exception:
+        return bool(flag)
+
+
+def _mpi_gather_first(comm, payload: Dict[str, Any], flag: bool) -> Optional[Dict[str, Any]]:
+    try:
+        from mpi4py import MPI  # type: ignore
+
+        mpicomm = comm.tompi4py()
+        data = {"flag": bool(flag), "payload": dict(payload)}
+        gathered = mpicomm.gather(data, root=0)
+        if mpicomm.rank != 0:
+            return None
+        for item in gathered:
+            if item.get("flag"):
+                return item.get("payload")
+        return None
+    except Exception:
+        if flag:
+            return dict(payload)
+        return None
+
+
+def _mpi_argmax(comm, value: float, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    try:
+        from mpi4py import MPI  # type: ignore
+
+        mpicomm = comm.tompi4py()
+        data = {"value": float(value), "payload": dict(payload)}
+        gathered = mpicomm.gather(data, root=0)
+        if mpicomm.rank != 0:
+            return None
+        best_val = None
+        best_payload = None
+        for item in gathered:
+            try:
+                v = float(item.get("value", float("-inf")))
+            except Exception:
+                v = float("-inf")
+            if not np.isfinite(v):
+                v = float("-inf")
+            if best_val is None or v > best_val:
+                best_val = v
+                best_payload = item.get("payload")
+        return best_payload
+    except Exception:
+        return dict(payload) if comm.getRank() == 0 else None
+
+
+def _mpi_maxloc(comm, value: float, rank: int) -> tuple[float, int]:
+    try:
+        from mpi4py import MPI  # type: ignore
+
+        mpicomm = comm.tompi4py()
+        v = float(value)
+        if not np.isfinite(v):
+            v = float("-inf")
+        out = mpicomm.allreduce((v, int(rank)), op=MPI.MAXLOC)
+        return float(out[0]), int(out[1])
+    except Exception:
+        return float(value), int(rank)
+
+
 def _normalize_cfg_for_snes_smoke(cfg):
     """
     P3.5-5-1: Normalize config for SNES smoke mode.
@@ -489,7 +558,7 @@ def solve_nonlinear_petsc_parallel(
         getattr(petsc_cfg, "options_prefix", None) if petsc_cfg is not None else None
     )
 
-    snes_type = "newtonls"
+    snes_type = str(getattr(petsc_cfg, "snes_type", "newtonls") if petsc_cfg is not None else "newtonls")
     linesearch_type = os.environ.get("DROPLET_PETSC_LINESEARCH_TYPE", "").strip()
     if not linesearch_type:
         linesearch_type = str(getattr(petsc_cfg, "linesearch_type", "bt") if petsc_cfg is not None else "bt")
@@ -508,6 +577,17 @@ def solve_nonlinear_petsc_parallel(
             linesearch_type,
             ksp_type,
         )
+
+    # Ensure PETSc options see the desired snes_type before setFromOptions().
+    try:
+        opts = PETSc.Options(prefix)
+        if snes_type:
+            try:
+                opts.setValue("snes_type", snes_type)
+            except Exception:
+                opts["snes_type"] = snes_type
+    except Exception:
+        pass
 
     u0 = np.asarray(u0, dtype=np.float64)
     n_layout = int(ctx.layout.n_dof())
@@ -853,10 +933,124 @@ def solve_nonlinear_petsc_parallel(
         except Exception:
             iter_no = -1
         phase_label = f"SNES_F_iter{iter_no}"
+        nl_cfg = getattr(ctx, "cfg", None)
+        nl = getattr(nl_cfg, "nonlinear", None) if nl_cfg is not None else None
+        sanitize_mode = str(getattr(nl, "sanitize_mode", "penalty")).strip().lower()
+        penalty_value = float(getattr(nl, "penalty_value", 1.0e20)) if nl is not None else 1.0e20
         sig_changed = False
         set_gas_eval_phase(phase_label)
         layout_mod.set_apply_u_tag(phase_label)
+        penalized = False
+        local_stage = None
+        local_reason = None
+        meta = getattr(ctx, "meta", None)
+        if meta is None or not isinstance(meta, dict):
+            meta = {}
+            try:
+                ctx.meta = meta
+            except Exception:
+                pass
+        penalty_count_before = int(meta.get("penalty_count", 0))
+        x_min = float("nan")
+        x_max = float("nan")
+        x_n_bad = 0
+        x_has_nonfinite = False
+        f_min = float("nan")
+        f_max = float("nan")
+        f_n_bad = 0
+        f_has_nonfinite = False
+
+        def _set_penalty_vec(stage: str, reason: str, *, extra: Dict[str, Any] | None = None) -> None:
+            nonlocal local_stage, local_reason
+            meta = getattr(ctx, "meta", None)
+            if meta is None or not isinstance(meta, dict):
+                meta = {}
+                try:
+                    ctx.meta = meta
+                except Exception:
+                    pass
+            meta["penalty_count"] = int(meta.get("penalty_count", 0)) + 1
+            meta["n_penalty_residual"] = int(meta.get("n_penalty_residual", 0)) + 1
+            penalty_last = {
+                "penalty_used": True,
+                "penalty_value": float(penalty_value),
+                "penalty_stage": str(stage),
+                "penalty_reason": str(reason),
+                "penalty_phase": str(phase_label),
+            }
+            if isinstance(extra, dict):
+                penalty_last.update(extra)
+            meta["penalty_last"] = penalty_last
+            meta["penalty_last_reason"] = str(reason)
+            meta["penalty_last_stage"] = str(stage)
+            meta["penalty_last_phase"] = str(phase_label)
+            local_stage = str(stage)
+            local_reason = str(reason)
+
+            try:
+                logger.warning(
+                    "[SNES_FUNC_PENALTY][rank=%d] stage=%s phase=%s reason=%s",
+                    world_rank,
+                    stage,
+                    phase_label,
+                    reason,
+                )
+            except Exception:
+                pass
+
+            try:
+                F.set(float(penalty_value))
+            except Exception:
+                try:
+                    F.set(0.0)
+                    rstart_f, rend_f = F.getOwnershipRange()
+                    idx = np.arange(int(rstart_f), int(rend_f), dtype=PETSc.IntType)
+                    if idx.size:
+                        F.setValues(
+                            idx,
+                            np.full(idx.size, float(penalty_value), dtype=np.float64),
+                            addv=PETSc.InsertMode.INSERT_VALUES,
+                        )
+                except Exception:
+                    pass
+            try:
+                F.assemblyBegin()
+                F.assemblyEnd()
+            except Exception:
+                pass
         try:
+            if world_rank == 0 and not ctx.meta.get("_snes_func_guard_logged", False):
+                ctx.meta["_snes_func_guard_logged"] = True
+                logger.info(
+                    "SNES func guard enabled: sanitize_mode=%s penalty_value=%.3e",
+                    sanitize_mode,
+                    float(penalty_value),
+                )
+            if sanitize_mode == "penalty":
+                try:
+                    x_view, x_mode = _vec_get_array_read(X)
+                    x_loc = np.array(x_view, dtype=np.float64, copy=True)
+                finally:
+                    _vec_restore_array(X, x_view, x_mode)
+                if x_loc.size:
+                    x_has_nonfinite = bool(not np.all(np.isfinite(x_loc)))
+                    if x_has_nonfinite:
+                        bad = ~np.isfinite(x_loc)
+                        x_n_bad = int(np.count_nonzero(bad))
+                    x_min = float(np.nanmin(x_loc)) if x_loc.size else float("nan")
+                    x_max = float(np.nanmax(x_loc)) if x_loc.size else float("nan")
+                if x_has_nonfinite:
+                    _set_penalty_vec(
+                        "x_nonfinite",
+                        f"Non-finite X in SNES function: n_bad={x_n_bad} min={x_min:.6g} max={x_max:.6g}",
+                        extra={
+                            "x_n_bad": x_n_bad,
+                            "x_min": x_min,
+                            "x_max": x_max,
+                        },
+                    )
+                    penalized = True
+
             if DEBUG_DOF_GID is not None:
                 try:
                     try:
@@ -943,14 +1137,163 @@ def solve_nonlinear_petsc_parallel(
                     _debug_check_xsig(state_dbg, world_rank)
                 except Exception as exc:
                     _dbg_rank("Y debug before props failed: %r", exc)
-            use_owned = bool(int(os.environ.get("DROPLET_PETSC_RESID_OWNED", "1")))
-            if use_owned:
-                residual_petsc_owned_rows(dm_mgr, ctx, X, F)
-            else:
-                residual_petsc(dm_mgr, ld, ctx, X, Fg=F)
+            if not penalized:
+                use_owned = bool(int(os.environ.get("DROPLET_PETSC_RESID_OWNED", "1")))
+                try:
+                    if use_owned:
+                        residual_petsc_owned_rows(dm_mgr, ctx, X, F)
+                    else:
+                        residual_petsc(dm_mgr, ld, ctx, X, Fg=F)
+                except Exception as exc:
+                    if sanitize_mode != "penalty":
+                        raise
+                    _set_penalty_vec(
+                        "residual_exception",
+                        f"{type(exc).__name__}: {exc}",
+                    )
+                    penalized = True
+        except Exception as exc:
+            if sanitize_mode != "penalty":
+                raise
+            _set_penalty_vec(
+                "snes_func_exception",
+                f"{type(exc).__name__}: {exc}",
+            )
+            penalized = True
         finally:
             layout_mod.set_apply_u_tag(None)
             set_gas_eval_phase(None)
+        if sanitize_mode == "penalty":
+            try:
+                f_view, f_mode = _vec_get_array_read(F)
+                f_loc = np.array(f_view, dtype=np.float64, copy=True)
+            finally:
+                _vec_restore_array(F, f_view, f_mode)
+            if f_loc.size:
+                f_has_nonfinite = bool(not np.all(np.isfinite(f_loc)))
+                if f_has_nonfinite:
+                    bad = ~np.isfinite(f_loc)
+                    f_n_bad = int(np.count_nonzero(bad))
+                f_min = float(np.nanmin(f_loc)) if f_loc.size else float("nan")
+                f_max = float(np.nanmax(f_loc)) if f_loc.size else float("nan")
+            if f_has_nonfinite:
+                _set_penalty_vec(
+                    "f_nonfinite",
+                    f"Non-finite F in SNES function: n_bad={f_n_bad} min={f_min:.6g} max={f_max:.6g}",
+                    extra={
+                        "f_n_bad": f_n_bad,
+                        "f_min": f_min,
+                        "f_max": f_max,
+                    },
+                )
+                penalized = True
+        # Track last evaluated X (owned) for failure dumps
+        try:
+            if "x_loc" not in locals():
+                try:
+                    x_view, x_mode = _vec_get_array_read(X)
+                    x_loc = np.array(x_view, dtype=np.float64, copy=True)
+                finally:
+                    _vec_restore_array(X, x_view, x_mode)
+            rstart_x, rend_x = X.getOwnershipRange()
+            meta["snes_last_x_owned"] = x_loc
+            meta["snes_last_x_range"] = (int(rstart_x), int(rend_x))
+            meta["snes_last_x_nonfinite"] = bool(x_loc.size and (not np.all(np.isfinite(x_loc))))
+            meta["snes_last_x_min"] = float(np.nanmin(x_loc)) if x_loc.size else float("nan")
+            meta["snes_last_x_max"] = float(np.nanmax(x_loc)) if x_loc.size else float("nan")
+            meta["snes_last_x_phase"] = str(phase_label)
+            meta["snes_last_x_rank"] = int(world_rank)
+        except Exception:
+            pass
+        # Record global/local stats on the last evaluated X/F (safe place for MPI collectives)
+        try:
+            if "x_loc" not in locals():
+                try:
+                    x_view, x_mode = _vec_get_array_read(X)
+                    x_loc = np.array(x_view, dtype=np.float64, copy=True)
+                finally:
+                    _vec_restore_array(X, x_view, x_mode)
+            if "f_loc" not in locals():
+                try:
+                    f_view, f_mode = _vec_get_array_read(F)
+                    f_loc = np.array(f_view, dtype=np.float64, copy=True)
+                finally:
+                    _vec_restore_array(F, f_view, f_mode)
+            x_nf = bool(x_loc.size and (not np.all(np.isfinite(x_loc))))
+            f_nf = bool(f_loc.size and (not np.all(np.isfinite(f_loc))))
+            x_inf = float(np.nanmax(np.abs(x_loc))) if x_loc.size else 0.0
+            f_inf = float(np.nanmax(np.abs(f_loc))) if f_loc.size else 0.0
+            x_probe = 1.0e308 if x_nf else x_inf
+            f_probe = 1.0e308 if f_nf else f_inf
+            g_x_inf, g_x_rank = _mpi_maxloc(comm, x_probe, world_rank)
+            g_f_inf, g_f_rank = _mpi_maxloc(comm, f_probe, world_rank)
+            meta["snes_last_global"] = {
+                "x_inf": float(g_x_inf),
+                "x_rank": int(g_x_rank),
+                "x_nonfinite": bool(_mpi_any(comm, x_nf)),
+                "f_inf": float(g_f_inf),
+                "f_rank": int(g_f_rank),
+                "f_nonfinite": bool(_mpi_any(comm, f_nf)),
+                "phase": str(phase_label),
+            }
+        except Exception:
+            pass
+        penalty_count_after = int(meta.get("penalty_count", 0))
+        if penalty_count_after > penalty_count_before and not local_stage:
+            penalty_last = meta.get("penalty_last", {}) if isinstance(meta, dict) else {}
+            local_stage = "residual_penalty_meta"
+            local_reason = str(
+                penalty_last.get("penalty_reason", "")
+                or meta.get("penalty_last_reason", "")
+                or "penalty_used"
+            )
+            penalized = True
+        meta["snes_last_eval"] = {
+            "phase": str(phase_label),
+            "stage": str(local_stage or ""),
+            "reason": str(local_reason or ""),
+            "x_has_nonfinite": bool(x_has_nonfinite),
+            "x_min": float(x_min),
+            "x_max": float(x_max),
+            "x_n_bad": int(x_n_bad),
+            "f_has_nonfinite": bool(f_has_nonfinite),
+            "f_min": float(f_min),
+            "f_max": float(f_max),
+            "f_n_bad": int(f_n_bad),
+            "penalty_count": int(penalty_count_after),
+        }
+        local_bad = bool(local_stage or penalized)
+        if local_bad:
+            ts_trial = None
+            try:
+                if ctx.layout.has_block("Ts"):
+                    u_layout = _dm_vec_to_layout(X)
+                    ts_trial = float(u_layout[int(ctx.layout.idx_Ts())])
+            except Exception:
+                ts_trial = None
+            payload = {
+                "rank": int(world_rank),
+                "stage": str(local_stage or ""),
+                "reason": str(local_reason or ""),
+                "phase": str(phase_label),
+                "t_old": float(getattr(ctx, "t_old", float("nan"))),
+                "dt": float(getattr(ctx, "dt", float("nan"))),
+                "Ts": ts_trial,
+            }
+            global_bad = _mpi_any(comm, local_bad)
+            if global_bad and is_root_rank():
+                first = _mpi_gather_first(comm, payload, local_bad)
+                if first is not None:
+                    logger.error(
+                        "GLOBAL_DOMAIN_EVENT: rank=%s stage=%s reason=%s phase=%s t=%s dt=%s Ts=%s",
+                        first.get("rank"),
+                        first.get("stage"),
+                        first.get("reason"),
+                        first.get("phase"),
+                        first.get("t_old"),
+                        first.get("dt"),
+                        first.get("Ts"),
+                    )
         try:
             res_inf = float(F.norm(PETSc.NormType.NORM_INFINITY))
         except Exception:
@@ -1137,119 +1480,183 @@ def solve_nonlinear_petsc_parallel(
             def _postcheck(ls_obj, X_vec, Y_vec, W_vec, changed_y, changed_w):
                 if dm_mgr is None or ld is None:
                     return
-                meta = ctx.meta
+                meta = getattr(ctx, "meta", None)
+                if meta is None or not isinstance(meta, dict):
+                    meta = {}
+                    try:
+                        ctx.meta = meta
+                    except Exception:
+                        pass
                 ls_max_dTs = float(getattr(nl_cfg, "ls_max_dTs", 0.2))
                 ls_max_dmpp_rel = float(getattr(nl_cfg, "ls_max_dmpp_rel", 0.05))
                 ls_max_dmpp_ref = float(getattr(nl_cfg, "ls_max_dmpp_ref", 1.0e-4))
                 ls_shrink = float(getattr(nl_cfg, "ls_shrink", 0.5))
                 ts_upper = estimate_ts_hard(ctx, mode=ts_upper_mode)
 
+                lambda_in = 1.0
                 try:
                     lambda_in = float(ls_obj.getLambda())
                 except Exception:
                     lambda_in = 1.0
                 lambda_out = lambda_in
 
+                def _note_ls_issue(stage: str, reason: str, extra: Dict[str, Any] | None = None) -> None:
+                    info = {
+                        "stage": str(stage),
+                        "reason": str(reason),
+                        "lambda": float(lambda_in),
+                        "rank": int(world_rank),
+                        "phase": "linesearch_postcheck",
+                    }
+                    if isinstance(extra, dict):
+                        info.update(extra)
+                    meta["ls_postcheck_last"] = dict(info)
+                    meta["ls_postcheck_error_count"] = int(meta.get("ls_postcheck_error_count", 0)) + 1
+
                 idx_ts = None
                 idx_mpp = None
+                idx_rd = None
                 if ctx.layout.has_block("Ts"):
                     idx_ts = int(ld.comp_if.get("Ts", [None])[0]) if "Ts" in ld.comp_if else None
                 if ctx.layout.has_block("mpp"):
                     idx_mpp = int(ld.comp_if.get("mpp", [None])[0]) if "mpp" in ld.comp_if else None
+                if ctx.layout.has_block("Rd"):
+                    idx_rd = int(ld.comp_if.get("Rd", [None])[0]) if "Rd" in ld.comp_if else None
 
                 from parallel.dm_manager import _dmcomposite_access
 
-                with _dmcomposite_access(dm_mgr.dm, X_vec) as x_parts:
-                    with _dmcomposite_access(dm_mgr.dm, Y_vec) as y_parts:
-                        with _dmcomposite_access(dm_mgr.dm, W_vec) as w_parts:
-                            try:
-                                x_if = x_parts[2]
-                                y_if = y_parts[2]
-                                w_if = w_parts[2]
-                            except Exception:
-                                return
+                try:
+                    with _dmcomposite_access(dm_mgr.dm, X_vec) as x_parts:
+                        with _dmcomposite_access(dm_mgr.dm, Y_vec) as y_parts:
+                            with _dmcomposite_access(dm_mgr.dm, W_vec) as w_parts:
+                                try:
+                                    x_if = x_parts[2]
+                                    y_if = y_parts[2]
+                                    w_if = w_parts[2]
+                                except Exception as exc:
+                                    _note_ls_issue(
+                                        "linesearch_postcheck_missing_block",
+                                        f"{type(exc).__name__}: {exc}",
+                                    )
+                                    return
 
-                            if x_if.getSize() == 0:
-                                return
+                                if x_if.getSize() == 0:
+                                    return
 
-                            x_view, x_mode = _vec_get_array_read(x_if)
-                            y_view, y_mode = _vec_get_array_read(y_if)
-                            try:
-                                x_if_arr = np.asarray(x_view, dtype=np.float64)
-                                y_if_arr = np.asarray(y_view, dtype=np.float64)
-                                w_if_arr = w_if.getArray()
-                            finally:
-                                _vec_restore_array(x_if, x_view, x_mode)
-                                _vec_restore_array(y_if, y_view, y_mode)
+                                x_view, x_mode = _vec_get_array_read(x_if)
+                                y_view, y_mode = _vec_get_array_read(y_if)
+                                try:
+                                    x_if_arr = np.asarray(x_view, dtype=np.float64)
+                                    y_if_arr = np.asarray(y_view, dtype=np.float64)
+                                    w_if_arr = w_if.getArray()
+                                finally:
+                                    _vec_restore_array(x_if, x_view, x_mode)
+                                    _vec_restore_array(y_if, y_view, y_mode)
 
-                            changed = False
+                                x_nf = bool(not np.all(np.isfinite(x_if_arr))) if x_if_arr.size else False
+                                y_nf = bool(not np.all(np.isfinite(y_if_arr))) if y_if_arr.size else False
+                                w_nf = bool(not np.all(np.isfinite(w_if_arr))) if w_if_arr.size else False
+                                if x_nf or y_nf or w_nf:
+                                    meta["ls_postcheck_nonfinite"] = True
+                                    _note_ls_issue(
+                                        "linesearch_postcheck_nonfinite",
+                                        "Non-finite values in X/Y/W",
+                                        {"x_nf": x_nf, "y_nf": y_nf, "w_nf": w_nf},
+                                    )
 
-                            # Optional Ts-based lambda cap (prevents overshoot)
-                            if ts_cap_enabled and idx_ts is not None and idx_ts < y_if_arr.size:
-                                Ts = float(x_if_arr[idx_ts])
-                                dTs = float(y_if_arr[idx_ts])
-                                lambda_out, info = cap_lambda_by_ts(
-                                    Ts,
-                                    dTs,
-                                    lambda_in,
-                                    ts_upper,
-                                    alpha=ts_cap_alpha,
-                                )
-                                meta["ls_lambda_last"] = float(lambda_out)
-                                if info.get("capped", False):
-                                    w_if_arr[:] = x_if_arr + lambda_out * y_if_arr
+                                changed = False
+
+                                # Optional Ts-based lambda cap (prevents overshoot)
+                                if ts_cap_enabled and idx_ts is not None and idx_ts < y_if_arr.size:
+                                    Ts = float(x_if_arr[idx_ts])
+                                    dTs = float(y_if_arr[idx_ts])
+                                    lambda_out, info = cap_lambda_by_ts(
+                                        Ts,
+                                        dTs,
+                                        lambda_in,
+                                        ts_upper,
+                                        alpha=ts_cap_alpha,
+                                    )
+                                    meta["ls_lambda_last"] = float(lambda_out)
+                                    if info.get("capped", False):
+                                        w_if_arr[:] = x_if_arr + lambda_out * y_if_arr
+                                        _set_flag(changed_w, True)
+                                        try:
+                                            ls_obj.setLambda(lambda_out)
+                                        except Exception:
+                                            pass
+                                        meta["n_lambda_cap_ts"] = int(meta.get("n_lambda_cap_ts", 0)) + 1
+                                        ts_trial = float(Ts + lambda_out * dTs)
+                                        if ts_upper is not None and np.isfinite(ts_upper):
+                                            meta["max_Ts_trial_minus_upper"] = max(
+                                                float(meta.get("max_Ts_trial_minus_upper", -np.inf)),
+                                                float(ts_trial - float(ts_upper)),
+                                            )
+                                        meta["lambda_cap_last"] = dict(info)
+
+                                # Apply direct trial-point clamps on W (interface only)
+                                if idx_ts is not None and idx_ts < w_if_arr.size:
+                                    Ts_old = float(x_if_arr[idx_ts])
+                                    Ts_try = float(w_if_arr[idx_ts])
+                                    if np.isfinite(Ts_old) and np.isfinite(Ts_try):
+                                        dTs_try = Ts_try - Ts_old
+                                        if ls_max_dTs > 0.0 and abs(dTs_try) > ls_max_dTs:
+                                            Ts_try = Ts_old + np.sign(dTs_try) * ls_max_dTs
+                                            w_if_arr[idx_ts] = Ts_try
+                                            meta["ls_clip_ts"] = int(meta.get("ls_clip_ts", 0)) + 1
+                                            changed = True
+                                        if ts_upper is not None and np.isfinite(ts_upper) and Ts_try > ts_upper:
+                                            w_if_arr[idx_ts] = float(ts_upper)
+                                            meta["ls_clip_ts"] = int(meta.get("ls_clip_ts", 0)) + 1
+                                            changed = True
+                                    else:
+                                        w_if_arr[:] = x_if_arr + float(ls_shrink) * (w_if_arr - x_if_arr)
+                                        meta["ls_shrink_count"] = int(meta.get("ls_shrink_count", 0)) + 1
+                                        changed = True
+
+                                if idx_mpp is not None and idx_mpp < w_if_arr.size:
+                                    mpp_old = float(x_if_arr[idx_mpp])
+                                    mpp_try = float(w_if_arr[idx_mpp])
+                                    if np.isfinite(mpp_old) and np.isfinite(mpp_try):
+                                        dmpp = mpp_try - mpp_old
+                                        max_dmpp = float(ls_max_dmpp_rel) * max(abs(mpp_old), float(ls_max_dmpp_ref))
+                                        if max_dmpp > 0.0 and abs(dmpp) > max_dmpp:
+                                            mpp_try = mpp_old + np.sign(dmpp) * max_dmpp
+                                            w_if_arr[idx_mpp] = mpp_try
+                                            meta["ls_clip_mpp"] = int(meta.get("ls_clip_mpp", 0)) + 1
+                                            changed = True
+                                        # Optional lower bound on mpp (if configured)
+                                        mpp_lower = float(getattr(nl_cfg, "mpp_lower", float("-inf")))
+                                        if np.isfinite(mpp_lower) and mpp_try < mpp_lower:
+                                            w_if_arr[idx_mpp] = float(mpp_lower)
+                                            meta["ls_clip_mpp"] = int(meta.get("ls_clip_mpp", 0)) + 1
+                                            changed = True
+                                    else:
+                                        w_if_arr[:] = x_if_arr + float(ls_shrink) * (w_if_arr - x_if_arr)
+                                        meta["ls_shrink_count"] = int(meta.get("ls_shrink_count", 0)) + 1
+                                        changed = True
+
+                                if idx_rd is not None and idx_rd < w_if_arr.size:
+                                    rd_old = float(x_if_arr[idx_rd])
+                                    rd_try = float(w_if_arr[idx_rd])
+                                    if np.isfinite(rd_old) and np.isfinite(rd_try):
+                                        rd_lower = float(getattr(nl_cfg, "Rd_lower", 1.0e-12))
+                                        if np.isfinite(rd_lower) and rd_try < rd_lower:
+                                            w_if_arr[idx_rd] = float(rd_lower)
+                                            meta["ls_clip_rd"] = int(meta.get("ls_clip_rd", 0)) + 1
+                                            changed = True
+                                    else:
+                                        w_if_arr[:] = x_if_arr + float(ls_shrink) * (w_if_arr - x_if_arr)
+                                        meta["ls_shrink_count"] = int(meta.get("ls_shrink_count", 0)) + 1
+                                        changed = True
+
+                                if changed:
                                     _set_flag(changed_w, True)
-                                    try:
-                                        ls_obj.setLambda(lambda_out)
-                                    except Exception:
-                                        pass
-                                    meta["n_lambda_cap_ts"] = int(meta.get("n_lambda_cap_ts", 0)) + 1
-                                    ts_trial = float(Ts + lambda_out * dTs)
-                                    if ts_upper is not None and np.isfinite(ts_upper):
-                                        meta["max_Ts_trial_minus_upper"] = max(
-                                            float(meta.get("max_Ts_trial_minus_upper", -np.inf)),
-                                            float(ts_trial - float(ts_upper)),
-                                        )
-                                    meta["lambda_cap_last"] = dict(info)
-
-                            # Apply direct trial-point clamps on W (interface only)
-                            if idx_ts is not None and idx_ts < w_if_arr.size:
-                                Ts_old = float(x_if_arr[idx_ts])
-                                Ts_try = float(w_if_arr[idx_ts])
-                                if np.isfinite(Ts_old) and np.isfinite(Ts_try):
-                                    dTs_try = Ts_try - Ts_old
-                                    if ls_max_dTs > 0.0 and abs(dTs_try) > ls_max_dTs:
-                                        Ts_try = Ts_old + np.sign(dTs_try) * ls_max_dTs
-                                        w_if_arr[idx_ts] = Ts_try
-                                        meta["ls_clip_ts"] = int(meta.get("ls_clip_ts", 0)) + 1
-                                        changed = True
-                                    if ts_upper is not None and np.isfinite(ts_upper) and Ts_try > ts_upper:
-                                        w_if_arr[idx_ts] = float(ts_upper)
-                                        meta["ls_clip_ts"] = int(meta.get("ls_clip_ts", 0)) + 1
-                                        changed = True
-                                else:
-                                    w_if_arr[:] = x_if_arr + float(ls_shrink) * (w_if_arr - x_if_arr)
-                                    meta["ls_shrink_count"] = int(meta.get("ls_shrink_count", 0)) + 1
-                                    changed = True
-
-                            if idx_mpp is not None and idx_mpp < w_if_arr.size:
-                                mpp_old = float(x_if_arr[idx_mpp])
-                                mpp_try = float(w_if_arr[idx_mpp])
-                                if np.isfinite(mpp_old) and np.isfinite(mpp_try):
-                                    dmpp = mpp_try - mpp_old
-                                    max_dmpp = float(ls_max_dmpp_rel) * max(abs(mpp_old), float(ls_max_dmpp_ref))
-                                    if max_dmpp > 0.0 and abs(dmpp) > max_dmpp:
-                                        mpp_try = mpp_old + np.sign(dmpp) * max_dmpp
-                                        w_if_arr[idx_mpp] = mpp_try
-                                        meta["ls_clip_mpp"] = int(meta.get("ls_clip_mpp", 0)) + 1
-                                        changed = True
-                                else:
-                                    w_if_arr[:] = x_if_arr + float(ls_shrink) * (w_if_arr - x_if_arr)
-                                    meta["ls_shrink_count"] = int(meta.get("ls_shrink_count", 0)) + 1
-                                    changed = True
-
-                            if changed:
-                                _set_flag(changed_w, True)
+                except Exception as exc:
+                    _note_ls_issue("linesearch_postcheck_exception", f"{type(exc).__name__}: {exc}")
+                    _set_flag(changed_y, False)
+                    _set_flag(changed_w, False)
+                    return
 
             try:
                 ls.setPostCheck(_postcheck)
@@ -1262,6 +1669,21 @@ def solve_nonlinear_petsc_parallel(
     xl_bounds = None
     xu_bounds = None
     if enable_vi_bounds and ctx.layout.has_block("Ts"):
+        # Prime tbub_last (used by estimate_ts_hard) by evaluating residual once at u0.
+        try:
+            meta = getattr(ctx, "meta", None)
+            if meta is None or not isinstance(meta, dict):
+                meta = {}
+                ctx.meta = meta
+            if meta.get("tbub_last", None) is None:
+                from assembly.residual_global import build_global_residual
+
+                try:
+                    build_global_residual(u0, ctx)
+                except Exception:
+                    pass
+        except Exception:
+            pass
         ts_upper = estimate_ts_hard(ctx, mode=ts_upper_mode)
         if ts_upper is not None and np.isfinite(ts_upper):
             try:
@@ -1273,15 +1695,30 @@ def solve_nonlinear_petsc_parallel(
                 xu_bounds = F.duplicate()
                 xl_bounds.set(-1.0e20)
                 xu_bounds.set(1.0e20)
-                idx_ts = int(ctx.layout.idx_Ts())
                 xl_arr = xl_bounds.getArray()
                 xu_arr = xu_bounds.getArray()
-                xl_arr[idx_ts] = float(ts_lower)
-                xu_arr[idx_ts] = float(ts_upper)
+                idx_ts = int(ctx.layout.idx_Ts())
+                if 0 <= idx_ts < xl_arr.size:
+                    xl_arr[idx_ts] = float(ts_lower)
+                    xu_arr[idx_ts] = float(ts_upper)
+                if ctx.layout.has_block("Rd"):
+                    idx_rd = int(ctx.layout.idx_Rd())
+                    rd_lower = float(getattr(nl_cfg, "Rd_lower", 1.0e-12))
+                    if np.isfinite(rd_lower) and 0 <= idx_rd < xl_arr.size:
+                        xl_arr[idx_rd] = float(rd_lower)
+                if ctx.layout.has_block("mpp"):
+                    idx_mpp = int(ctx.layout.idx_mpp())
+                    mpp_lower = float(getattr(nl_cfg, "mpp_lower", float("-inf")))
+                    if np.isfinite(mpp_lower) and 0 <= idx_mpp < xl_arr.size:
+                        xl_arr[idx_mpp] = float(mpp_lower)
                 snes.setVariableBounds(xl_bounds, xu_bounds)
                 ctx.meta["vi_bounds_enabled"] = True
                 ctx.meta["vi_ts_upper"] = float(ts_upper)
                 ctx.meta["vi_ts_lower"] = float(ts_lower)
+                if ctx.layout.has_block("Rd"):
+                    ctx.meta["vi_rd_lower"] = float(getattr(nl_cfg, "Rd_lower", 1.0e-12))
+                if ctx.layout.has_block("mpp"):
+                    ctx.meta["vi_mpp_lower"] = float(getattr(nl_cfg, "mpp_lower", float("-inf")))
             except Exception:
                 xl_bounds = None
                 xu_bounds = None
@@ -1504,6 +1941,37 @@ def solve_nonlinear_petsc_parallel(
         tim["time_linear_total"] += (time.perf_counter() - ksp_t["t0"])
         ksp_t["in_solve"] = False
 
+    # Capture post-solve X/F stats (helps locate rank when SNES reports domain errors)
+    post_x = {"has_nonfinite": False, "n_bad": 0, "min": float("nan"), "max": float("nan"), "inf": 0.0}
+    post_f = {"has_nonfinite": False, "n_bad": 0, "min": float("nan"), "max": float("nan"), "inf": 0.0}
+    try:
+        x_view, x_mode = _vec_get_array_read(X)
+        x_loc = np.array(x_view, dtype=np.float64, copy=True)
+    finally:
+        _vec_restore_array(X, x_view, x_mode)
+    if x_loc.size:
+        post_x["has_nonfinite"] = bool(not np.all(np.isfinite(x_loc)))
+        if post_x["has_nonfinite"]:
+            post_x["n_bad"] = int(np.count_nonzero(~np.isfinite(x_loc)))
+        post_x["min"] = float(np.nanmin(x_loc))
+        post_x["max"] = float(np.nanmax(x_loc))
+        post_x["inf"] = float(np.nanmax(np.abs(x_loc)))
+    try:
+        f_view, f_mode = _vec_get_array_read(F)
+        f_loc = np.array(f_view, dtype=np.float64, copy=True)
+    finally:
+        _vec_restore_array(F, f_view, f_mode)
+    if f_loc.size:
+        post_f["has_nonfinite"] = bool(not np.all(np.isfinite(f_loc)))
+        if post_f["has_nonfinite"]:
+            post_f["n_bad"] = int(np.count_nonzero(~np.isfinite(f_loc)))
+        post_f["min"] = float(np.nanmin(f_loc))
+        post_f["max"] = float(np.nanmax(f_loc))
+        post_f["inf"] = float(np.nanmax(np.abs(f_loc)))
+    if isinstance(getattr(ctx, "meta", None), dict):
+        ctx.meta["post_solve_x"] = dict(post_x)
+        ctx.meta["post_solve_f"] = dict(post_f)
+
     try:
         apply_fieldsplit_subksp_defaults(ksp, diag_pc)
     except Exception as exc:
@@ -1523,6 +1991,126 @@ def solve_nonlinear_petsc_parallel(
 
     if not converged and world_rank == 0:
         logger.warning("SNES not converged: reason=%d res_inf=%.3e", reason, res_norm_inf)
+    if reason == -6:
+        meta = ctx.meta if isinstance(getattr(ctx, "meta", None), dict) else {}
+        last_eval = meta.get("snes_last_eval", {}) if isinstance(meta, dict) else {}
+        post_x = meta.get("post_solve_x", {}) if isinstance(meta, dict) else {}
+        post_f = meta.get("post_solve_f", {}) if isinstance(meta, dict) else {}
+        ls_info = meta.get("ls_postcheck_last", {}) if isinstance(meta, dict) else {}
+        ls_flag = bool(ls_info) or bool(meta.get("ls_postcheck_nonfinite", False)) or (
+            int(meta.get("ls_postcheck_error_count", 0)) > 0
+        )
+        local_bad = bool(
+            last_eval.get("x_has_nonfinite")
+            or last_eval.get("f_has_nonfinite")
+            or int(last_eval.get("penalty_count", 0)) > 0
+            or post_x.get("has_nonfinite")
+            or post_f.get("has_nonfinite")
+            or ls_flag
+        )
+        payload = {
+            "rank": int(world_rank),
+            "stage": str(last_eval.get("stage", "")),
+            "reason": str(last_eval.get("reason", "")),
+            "phase": str(last_eval.get("phase", "")),
+            "t_old": float(getattr(ctx, "t_old", float("nan"))),
+            "dt": float(getattr(ctx, "dt", float("nan"))),
+            "Ts": None,
+            "x_min": last_eval.get("x_min"),
+            "x_max": last_eval.get("x_max"),
+            "f_min": last_eval.get("f_min"),
+            "f_max": last_eval.get("f_max"),
+            "penalty_count": last_eval.get("penalty_count", 0),
+            "post_x_nonfinite": bool(post_x.get("has_nonfinite", False)),
+            "post_x_min": post_x.get("min"),
+            "post_x_max": post_x.get("max"),
+            "post_x_n_bad": post_x.get("n_bad", 0),
+            "post_x_inf": post_x.get("inf", 0.0),
+            "post_f_nonfinite": bool(post_f.get("has_nonfinite", False)),
+            "post_f_min": post_f.get("min"),
+            "post_f_max": post_f.get("max"),
+            "post_f_n_bad": post_f.get("n_bad", 0),
+            "post_f_inf": post_f.get("inf", 0.0),
+            "ls_stage": ls_info.get("stage", ""),
+            "ls_reason": ls_info.get("reason", ""),
+            "ls_lambda": ls_info.get("lambda", ""),
+        }
+        if payload.get("stage", "") == "" and ls_info:
+            payload["stage"] = str(ls_info.get("stage", "linesearch_postcheck"))
+        if payload.get("reason", "") == "" and ls_info:
+            payload["reason"] = str(ls_info.get("reason", "linesearch_postcheck"))
+        try:
+            if ctx.layout.has_block("Ts"):
+                payload["Ts"] = float(u_final[int(ctx.layout.idx_Ts())])
+        except Exception:
+            payload["Ts"] = None
+        if is_root_rank():
+            global_stats = meta.get("snes_last_global", {}) if isinstance(meta, dict) else {}
+            stage = payload.get("stage") or ""
+            reason = payload.get("reason") or ""
+            g_x_inf = float(global_stats.get("x_inf", 0.0) or 0.0)
+            g_f_inf = float(global_stats.get("f_inf", 0.0) or 0.0)
+            g_x_nonfinite = bool(global_stats.get("x_nonfinite", False))
+            g_f_nonfinite = bool(global_stats.get("f_nonfinite", False))
+            if not stage:
+                if g_f_nonfinite:
+                    stage = "global_f_nonfinite"
+                elif g_x_nonfinite:
+                    stage = "global_x_nonfinite"
+                elif g_f_inf >= g_x_inf:
+                    stage = "global_max_f"
+                else:
+                    stage = "global_max_x"
+            if not reason:
+                if g_f_nonfinite:
+                    reason = "global_f_nonfinite"
+                elif g_x_nonfinite:
+                    reason = "global_x_nonfinite"
+                else:
+                    reason = stage
+            if stage == "global_max_x":
+                rank_guess = global_stats.get("x_rank", payload.get("rank"))
+            else:
+                rank_guess = global_stats.get("f_rank", global_stats.get("x_rank", payload.get("rank")))
+            logger.error(
+                "GLOBAL_DOMAIN_EVENT: rank=%s stage=%s reason=%s phase=%s t=%s dt=%s Ts=%s "
+                "x_min=%s x_max=%s f_min=%s f_max=%s penalty_count=%s "
+                "post_x_nonfinite=%s post_x_n_bad=%s post_x_min=%s post_x_max=%s post_x_inf=%s "
+                "post_f_nonfinite=%s post_f_n_bad=%s post_f_min=%s post_f_max=%s post_f_inf=%s "
+                "ls_stage=%s ls_reason=%s ls_lambda=%s "
+                "g_x_inf=%s g_x_rank=%s g_x_nonfinite=%s g_f_inf=%s g_f_rank=%s g_f_nonfinite=%s",
+                rank_guess,
+                stage,
+                reason,
+                payload.get("phase"),
+                payload.get("t_old"),
+                payload.get("dt"),
+                payload.get("Ts"),
+                payload.get("x_min"),
+                payload.get("x_max"),
+                payload.get("f_min"),
+                payload.get("f_max"),
+                payload.get("penalty_count"),
+                payload.get("post_x_nonfinite"),
+                payload.get("post_x_n_bad"),
+                payload.get("post_x_min"),
+                payload.get("post_x_max"),
+                payload.get("post_x_inf"),
+                payload.get("post_f_nonfinite"),
+                payload.get("post_f_n_bad"),
+                payload.get("post_f_min"),
+                payload.get("post_f_max"),
+                payload.get("post_f_inf"),
+                payload.get("ls_stage"),
+                payload.get("ls_reason"),
+                payload.get("ls_lambda"),
+                global_stats.get("x_inf"),
+                global_stats.get("x_rank"),
+                global_stats.get("x_nonfinite"),
+                global_stats.get("f_inf"),
+                global_stats.get("f_rank"),
+                global_stats.get("f_nonfinite"),
+            )
 
     j_type = "none"
     p_type = "none"
@@ -1594,6 +2182,8 @@ def solve_nonlinear_petsc_parallel(
         penalty_last = ctx.meta.get("penalty_last", {}) if isinstance(ctx.meta, dict) else {}
         extra["n_penalty_residual"] = int(ctx.meta.get("penalty_count", 0))
         extra["penalty_last_reason"] = str(penalty_last.get("penalty_reason", ""))
+        extra["penalty_last_stage"] = str(penalty_last.get("penalty_stage", ""))
+        extra["penalty_last_phase"] = str(penalty_last.get("penalty_phase", ""))
         extra["n_lambda_cap_ts"] = int(ctx.meta.get("n_lambda_cap_ts", 0))
         extra["max_Ts_trial_minus_upper"] = float(ctx.meta.get("max_Ts_trial_minus_upper", np.nan))
         extra["vi_bounds_enabled"] = bool(ctx.meta.get("vi_bounds_enabled", False))

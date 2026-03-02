@@ -18,6 +18,7 @@ This module:
 from __future__ import annotations
 
 import logging
+import json
 from dataclasses import dataclass, field
 from pathlib import Path
 import importlib.util
@@ -44,6 +45,151 @@ from solvers.solver_linear import solve_linear_system
 from solvers.linear_types import LinearSolveResult
 
 logger = logging.getLogger(__name__)
+
+
+def _dump_nonlinear_failure(
+    cfg: CaseConfig,
+    ctx,
+    *,
+    step_id: Optional[int],
+    t_old: float,
+    dt: float,
+    tag: str = "snes_last_x",
+    u_last_good: Optional[np.ndarray] = None,
+    u_attempt: Optional[np.ndarray] = None,
+    u_final: Optional[np.ndarray] = None,
+    nl_diag: Optional[Any] = None,
+    message: Optional[str] = None,
+) -> None:
+    """Dump last SNES-evaluated X (owned) and minimal meta for failure for each rank."""
+    try:
+        base_dir = Path(getattr(getattr(cfg, "paths", None), "case_dir", "out"))
+        step_tag = f"step_{int(step_id):06d}" if step_id is not None else f"t_{t_old:.6e}"
+        fail_dir = base_dir / f"failed_{step_tag}"
+        fail_dir.mkdir(parents=True, exist_ok=True)
+    except Exception:
+        return
+
+    meta = getattr(ctx, "meta", {}) if ctx is not None else {}
+    if not isinstance(meta, dict):
+        meta = {}
+
+    x_owned = meta.get("snes_last_x_owned", None)
+    x_range = meta.get("snes_last_x_range", None)
+    rank = int(meta.get("snes_last_x_rank", 0))
+
+    if x_owned is not None:
+        try:
+            arr = np.asarray(x_owned, dtype=np.float64).ravel()
+            if x_range and isinstance(x_range, (tuple, list)) and len(x_range) == 2:
+                rstart, rend = int(x_range[0]), int(x_range[1])
+            else:
+                rstart, rend = 0, int(arr.size)
+            out_csv = fail_dir / f"rank_{rank:03d}_{tag}.csv"
+            with out_csv.open("w", encoding="utf-8", newline="\n") as f:
+                f.write("global_idx,value\n")
+                for i, val in enumerate(arr):
+                    f.write(f"{rstart + i},{val:.16e}\n")
+        except Exception:
+            pass
+
+    def _write_vec_csv(vec: np.ndarray, out_path: Path) -> None:
+        arr = np.asarray(vec, dtype=np.float64).ravel()
+        with out_path.open("w", encoding="utf-8", newline="\n") as f:
+            f.write("idx,value\n")
+            for i, val in enumerate(arr):
+                f.write(f"{i},{val:.16e}\n")
+
+    if u_last_good is not None:
+        try:
+            out_npy = fail_dir / "u_last_good.npy"
+            np.save(out_npy, np.asarray(u_last_good, dtype=np.float64))
+            _write_vec_csv(np.asarray(u_last_good, dtype=np.float64), fail_dir / "u_last_good.csv")
+        except Exception:
+            pass
+    if u_attempt is not None:
+        try:
+            out_npy = fail_dir / "u_attempt.npy"
+            np.save(out_npy, np.asarray(u_attempt, dtype=np.float64))
+            _write_vec_csv(np.asarray(u_attempt, dtype=np.float64), fail_dir / "u_attempt.csv")
+        except Exception:
+            pass
+    if u_final is not None:
+        try:
+            out_npy = fail_dir / "u_final.npy"
+            np.save(out_npy, np.asarray(u_final, dtype=np.float64))
+            _write_vec_csv(np.asarray(u_final, dtype=np.float64), fail_dir / "u_final.csv")
+        except Exception:
+            pass
+
+    def _json_sanitize(obj: Any) -> Any:
+        if obj is None or isinstance(obj, (str, int, float, bool)):
+            return obj
+        if isinstance(obj, np.generic):
+            try:
+                return obj.item()
+            except Exception:
+                return str(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        if isinstance(obj, dict):
+            return {str(k): _json_sanitize(v) for k, v in obj.items()}
+        if isinstance(obj, (list, tuple, set)):
+            return [_json_sanitize(v) for v in obj]
+        return str(obj)
+
+    meta_out = {
+        "rank": rank,
+        "step_id": int(step_id) if step_id is not None else None,
+        "t_old": float(t_old),
+        "dt": float(dt),
+        "snes_last_x_range": x_range,
+        "snes_last_x_nonfinite": meta.get("snes_last_x_nonfinite", None),
+        "snes_last_x_min": meta.get("snes_last_x_min", None),
+        "snes_last_x_max": meta.get("snes_last_x_max", None),
+        "snes_last_x_phase": meta.get("snes_last_x_phase", None),
+        "snes_last_global": meta.get("snes_last_global", None),
+        "ls_postcheck_last": meta.get("ls_postcheck_last", None),
+        "penalty_last_reason": meta.get("penalty_last_reason", None),
+        "penalty_last_stage": meta.get("penalty_last_stage", None),
+    }
+    try:
+        out_json = fail_dir / f"rank_{rank:03d}_meta.json"
+        out_json.write_text(json.dumps(_json_sanitize(meta_out), indent=2, sort_keys=True), encoding="utf-8")
+    except Exception:
+        pass
+
+    report = {
+        "step_id": int(step_id) if step_id is not None else None,
+        "t_old": float(t_old),
+        "dt": float(dt),
+        "message": str(message) if message is not None else "",
+        "nonlinear_diag": {},
+        "snes_last_global": meta.get("snes_last_global", None),
+        "mfpc_fd_last_fail": meta.get("mfpc_fd_last_fail", None),
+        "penalty_last_reason": meta.get("penalty_last_reason", None),
+        "penalty_last_stage": meta.get("penalty_last_stage", None),
+        "ls_postcheck_last": meta.get("ls_postcheck_last", None),
+    }
+    try:
+        if nl_diag is not None:
+            report["nonlinear_diag"] = {
+                "converged": bool(getattr(nl_diag, "converged", False)),
+                "method": getattr(nl_diag, "method", ""),
+                "n_iter": int(getattr(nl_diag, "n_iter", 0)),
+                "res_norm_2": float(getattr(nl_diag, "res_norm_2", float("nan"))),
+                "res_norm_inf": float(getattr(nl_diag, "res_norm_inf", float("nan"))),
+                "message": getattr(nl_diag, "message", None),
+                "extra": dict(getattr(nl_diag, "extra", {}) or {}),
+            }
+    except Exception:
+        pass
+    try:
+        (fail_dir / "failure_report.json").write_text(
+            json.dumps(_json_sanitize(report), indent=2, sort_keys=True), encoding="utf-8"
+        )
+    except Exception:
+        pass
 
 
 @dataclass(slots=True)
@@ -114,6 +260,8 @@ def advance_one_step_scipy(
     state: State,
     props: Props,
     t: float,
+    *,
+    step_id: Optional[int] = None,
 ) -> StepResult:
     """
     Advance coupled unknowns (Tg, Tl, Yg, Ts, mpp, Rd) by one fixed dt.
@@ -142,6 +290,7 @@ def advance_one_step_scipy(
             props_old=props_old,
             t_old=t_old,
             dt=dt,
+            step_id=step_id,
         )
 
     # initial nonlinear guess (MVP: old state)
@@ -210,6 +359,7 @@ def advance_one_step_scipy(
         layout=layout,
         tol_closure=float(cfg.checks.sumY_tol),
         clip_negative_closure=True,  # Enable automatic correction of numerical errors
+        min_Y_state=float(getattr(cfg.checks, "min_Y", 1.0e-30)),
     )
     _postprocess_species_bounds(cfg, layout, state_new)
 
@@ -314,6 +464,8 @@ def _advance_one_step_nonlinear_scipy(
     props_old: Props,
     t_old: float,
     dt: float,
+    *,
+    step_id: Optional[int] = None,
 ) -> StepResult:
     """Advance one step using global nonlinear solve (backend dispatch)."""
     t_new = t_old + dt
@@ -341,6 +493,7 @@ def _advance_one_step_nonlinear_scipy(
             message=f"nonlinear context build failed: {exc}",
         )
 
+    u_last_good = np.asarray(u0, dtype=np.float64)
     try:
         nl_result = solve_nonlinear(ctx, u0)
     except Exception as exc:
@@ -348,6 +501,16 @@ def _advance_one_step_nonlinear_scipy(
         diag = _build_step_diagnostics_fail(t_old, t_new, dt, message=str(exc))
         diag.nonlinear_converged = False
         diag.nonlinear_method = getattr(getattr(cfg, "nonlinear", None), "solver", "unknown")
+        _dump_nonlinear_failure(
+            cfg,
+            ctx,
+            step_id=step_id,
+            t_old=t_old,
+            dt=dt,
+            u_last_good=u_last_good,
+            u_attempt=u0,
+            message=str(exc),
+        )
         return StepResult(
             state_new=state_old,
             props_new=props_old,
@@ -375,6 +538,18 @@ def _advance_one_step_nonlinear_scipy(
         except Exception:
             pass
         _write_interface_diag_safe(cfg=cfg, diag=diag)  # P0.3: Write diag for nonlinear failure
+        _dump_nonlinear_failure(
+            cfg,
+            ctx,
+            step_id=step_id,
+            t_old=t_old,
+            dt=dt,
+            u_last_good=u_last_good,
+            u_attempt=u0,
+            u_final=nl_result.u,
+            nl_diag=nl_result.diag,
+            message=diag.extra.get("message", None),
+        )
         return StepResult(
             state_new=state_old,
             props_new=props_old,
@@ -402,6 +577,18 @@ def _advance_one_step_nonlinear_scipy(
             _update_interface_diag_from_nonlinear(diag)
         except Exception:
             pass
+        _dump_nonlinear_failure(
+            cfg,
+            ctx,
+            step_id=step_id,
+            t_old=t_old,
+            dt=dt,
+            u_last_good=u_last_good,
+            u_attempt=u0,
+            u_final=nl_result.u,
+            nl_diag=nl_result.diag,
+            message="Nonlinear returned non-finite u",
+        )
         return StepResult(
             state_new=state_old,
             props_new=props_old,
@@ -630,7 +817,9 @@ def _postprocess_species_bounds(cfg: CaseConfig, layout: UnknownLayout, state: S
     if not layout.has_block("Yg") or layout.Ns_g_eff == 0:
         return
     clamp = bool(getattr(cfg.checks, "clamp_negative_Y", False))
-    min_Y = float(getattr(cfg.checks, "min_Y", 0.0))
+    min_Y = float(getattr(cfg.checks, "min_Y", 1.0e-30))
+    if min_Y < 0.0:
+        min_Y = 0.0
     tol = float(getattr(cfg.checks, "sumY_tol", 1e-10))
 
     # Clamp solved (reduced) species if requested
@@ -666,14 +855,25 @@ def _postprocess_species_bounds(cfg: CaseConfig, layout: UnknownLayout, state: S
 
         state.Yg[closure_idx, :] = closure
 
-    # FIXED: Use simplex projection instead of clip to enforce sum(Y) = 1.0
-    # Previous np.clip() would change sum(Y), violating mass conservation.
-    # Simplex projection maintains sum(Y) = 1.0 while ensuring Y >= min_Y.
-    if clamp:
+    # Apply simplex projection only when needed (avoid unnecessary perturbations).
+    need_proj = False
+    if min_Y > 0.0:
+        need_proj = True
+    elif state.Yg.size:
+        if not np.all(np.isfinite(state.Yg)):
+            need_proj = True
+        else:
+            min_val = float(np.min(state.Yg))
+            if min_val < -tol:
+                need_proj = True
+            sums = np.sum(state.Yg, axis=0)
+            if sums.size:
+                max_sum_err = float(np.max(np.abs(sums - 1.0)))
+                if max_sum_err > tol:
+                    need_proj = True
+
+    if need_proj:
         state.Yg = project_Y_cellwise(state.Yg, min_Y=min_Y, axis=0)
-    else:
-        # Even without clamp, apply projection to fix any floating-point errors
-        state.Yg = project_Y_cellwise(state.Yg, min_Y=1e-14, axis=0)
 
 def _build_step_diagnostics(
     lin_result: LinearSolveResult,

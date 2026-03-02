@@ -72,6 +72,7 @@ class NonlinearContext:
             layout=self.layout,
             tol_closure=tol_sumY,
             clip_negative_closure=clip_negative_closure,
+            min_Y_state=float(getattr(self.cfg.checks, "min_Y", 1.0e-30)),
         )
 
     def make_state_from_u(
