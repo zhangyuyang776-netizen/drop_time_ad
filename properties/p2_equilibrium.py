@@ -18,10 +18,8 @@ def mass_to_mole(Y: np.ndarray, M: np.ndarray) -> np.ndarray:
     M = np.asarray(M, dtype=np.float64)
     denom = float(np.sum(Y / np.maximum(M, EPS)))
     if denom <= EPS or not np.isfinite(denom):
-        out = np.zeros_like(Y)
-        if out.size:
-            out[0] = 1.0
-        return out
+        # Do not inject a fake background species here; let the caller decide how to handle.
+        return np.zeros_like(Y)
     return (Y / np.maximum(M, EPS)) / denom
 
 
@@ -31,10 +29,8 @@ def mole_to_mass(X: np.ndarray, M: np.ndarray) -> np.ndarray:
     numer = X * np.maximum(M, EPS)
     denom = float(np.sum(numer))
     if denom <= EPS or not np.isfinite(denom):
-        out = np.zeros_like(X)
-        if out.size:
-            out[0] = 1.0
-        return out
+        # Do not inject a fake background species here; let the caller decide how to handle.
+        return np.zeros_like(X)
     return numer / denom
 
 
@@ -169,19 +165,10 @@ def _project_background(
     if not np.any(mask_bg) or y_bg_total <= 0.0:
         return y_bg, False, False
 
+    # Backgrounds are distributed by farfield proportions; no per-species floor here.
     bg_vals = y_bg_total * X_bg_norm[mask_bg]
-    n_bg = int(bg_vals.size)
-    floor_applied = bool(np.any(bg_vals < float(eps_bg)))
-    floor_relaxed = False
-    if y_bg_total <= n_bg * float(eps_bg):
-        bg_vals = np.full(n_bg, y_bg_total / n_bg, dtype=np.float64)
-        floor_relaxed = True
-        floor_applied = True
-    else:
-        bg_vals = np.maximum(bg_vals, float(eps_bg))
-        bg_vals *= y_bg_total / float(np.sum(bg_vals))
     y_bg[mask_bg] = bg_vals
-    return y_bg, floor_applied, floor_relaxed
+    return y_bg, False, False
 
 
 def interface_equilibrium(
@@ -293,7 +280,8 @@ def interface_equilibrium(
         raise ValueError("Gas arrays must match gas_names length.")
 
     Xg_far = mass_to_mole(Yg_far_arr, M_g_arr)
-    mask_bg = np.ones(len(gas_names), dtype=bool)
+    # Background = species explicitly present in farfield (excluding condensables).
+    mask_bg = Yg_far_arr > 0.0
     mask_bg[idxG] = False
     X_bg = np.where(mask_bg, Xg_far, 0.0)
     s_bg = float(np.sum(X_bg))

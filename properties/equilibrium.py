@@ -366,8 +366,10 @@ def compute_interface_equilibrium_full(
     p_partial = x_cond * psat[idxL] if idxL.size else np.zeros(0, dtype=np.float64)
     sum_partials = float(np.sum(p_partial)) if p_partial.size else 0.0
 
-    mask_bg = np.ones(len(model.gas_names), dtype=bool)
-    mask_bg[model.idx_cond_g] = False
+    cond_mask = np.zeros(len(model.gas_names), dtype=bool)
+    cond_mask[model.idx_cond_g] = True
+    # Background = species explicitly present in farfield (excluding condensables).
+    mask_bg = (model.Yg_farfield > 0.0) & (~cond_mask)
     X_bg = np.where(mask_bg, model.Xg_farfield, 0.0)
     s_bg = float(np.sum(X_bg))
     X_bg_norm = X_bg / s_bg if s_bg > EPS else np.zeros_like(X_bg)
@@ -376,6 +378,8 @@ def compute_interface_equilibrium_full(
     y_bg_total = float(p2.get("meta", {}).get("y_bg_total", 0.0))
 
     meta = dict(p2.get("meta", {}))
+    active_bg_names = [name for i, name in enumerate(model.gas_names) if mask_bg[i]]
+    inactive_R_count = int(np.sum((~mask_bg) & (~cond_mask)))
     meta.update(
         {
             "psat_sources": ["p2db"] * len(model.liq_names),
@@ -387,6 +391,8 @@ def compute_interface_equilibrium_full(
             "eps_bg": float(model.eps_bg),
             "case_id": model.case_id,
             "path": "full",
+            "active_bg_names": active_bg_names,
+            "inactive_R_names_count": inactive_R_count,
         }
     )
 
