@@ -1337,8 +1337,8 @@ def _build_eq_result_for_step(
     )
     try:
         eq_cfg = cfg.physics.interface.equilibrium
-        tol_enter = float(getattr(eq_cfg, "sat_tol_enter", 1.0e-3))
-        tol_exit = float(getattr(eq_cfg, "sat_tol_exit", 5.0e-3))
+        tol_enter = float(getattr(eq_cfg, "sat_tol_enter", 0.04))
+        tol_exit = float(getattr(eq_cfg, "sat_tol_exit", 0.10))
         meta = dict(result.meta)
         s_raw = meta.get("sum_x_psat_over_P", meta.get("sum_y_cond_raw", meta.get("psat_over_P", float("nan"))))
         regime, _ = decide_regime(s_raw, None, tol_enter=tol_enter, tol_exit=tol_exit)

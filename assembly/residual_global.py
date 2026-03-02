@@ -395,8 +395,8 @@ def _update_iface_regime(ctx: NonlinearContext, eq_result: dict, cfg) -> None:
         return
 
     eq_cfg = getattr(getattr(getattr(cfg, "physics", None), "interface", None), "equilibrium", None)
-    tol_enter = float(getattr(eq_cfg, "sat_tol_enter", 1.0e-3)) if eq_cfg is not None else 1.0e-3
-    tol_exit = float(getattr(eq_cfg, "sat_tol_exit", 5.0e-3)) if eq_cfg is not None else 5.0e-3
+    tol_enter = float(getattr(eq_cfg, "sat_tol_enter", 0.04)) if eq_cfg is not None else 0.04
+    tol_exit = float(getattr(eq_cfg, "sat_tol_exit", 0.10)) if eq_cfg is not None else 0.10
     max_switch = int(getattr(eq_cfg, "regime_lock_max", 1)) if eq_cfg is not None else 1
 
     prev = str(ctx.meta.get("iface_regime", "evap")).strip().lower()

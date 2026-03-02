@@ -50,7 +50,10 @@ physics:
       method: "raoult_psat"
       condensables_gas: ["NC12H26"]
       Ts_guard_dT: 3.0
-      eps_bg: 1.0e-12
+      eps_bg: 1.0e-3
+      sat_tol_enter: 0.04
+      sat_tol_exit: 0.10
+      Ts_sat_eps_K: 0.5
 
   liquid:
     backend: p2db
