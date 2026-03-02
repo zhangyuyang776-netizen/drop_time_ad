@@ -720,6 +720,42 @@ def _build_mpp_row(
     J_full_state = mpp_state * Yg_eq_full + j_corr
     k_cl = layout.gas_closure_index
 
+    # Active set for interface flux override: background + condensables + closure
+    gas_names = list(getattr(layout, "gas_species_full", []) or [])
+    Ns_g_names = len(gas_names)
+    active_mask_full = np.zeros(Ns_g, dtype=bool)
+    active_names: List[str] = []
+    if Ns_g_names == Ns_g:
+        name_to_idx = {name: i for i, name in enumerate(gas_names)}
+        # Background: explicitly provided farfield species (non-zero only)
+        Yg_far_dict = getattr(getattr(cfg, "initial", None), "Yg", {}) or {}
+        for name, val in Yg_far_dict.items():
+            if name in name_to_idx:
+                try:
+                    if float(val) > 0.0:
+                        active_mask_full[name_to_idx[name]] = True
+                except Exception:
+                    continue
+        # Condensables: from interface config or liq2gas_map fallback
+        cond_gas: List[str] = []
+        iface_cfg = getattr(getattr(cfg, "physics", None), "interface", None)
+        if iface_cfg is not None:
+            eq_cfg = getattr(iface_cfg, "equilibrium", None)
+            cond_gas = list(getattr(eq_cfg, "condensables_gas", []) or [])
+        if not cond_gas:
+            cond_gas = list(getattr(getattr(cfg, "species", None), "liq2gas_map", {}).values())
+        for name in cond_gas:
+            if name in name_to_idx:
+                active_mask_full[name_to_idx[name]] = True
+        # Closure
+        if k_cl is not None and 0 <= int(k_cl) < Ns_g:
+            active_mask_full[int(k_cl)] = True
+
+        active_names = [gas_names[i] for i, ok in enumerate(active_mask_full) if ok]
+    else:
+        if k_cl is not None and 0 <= int(k_cl) < Ns_g:
+            active_mask_full[int(k_cl)] = True
+
     diag_update: Dict[str, Any] = {
         "evaporation": {
             "balance_liq": l_name,
@@ -746,6 +782,9 @@ def _build_mpp_row(
             "j_corr_full": j_corr,
             "J_full": J_full,
             "J_full_state": J_full_state,
+            "active_mask_full": active_mask_full,
+            "active_names": active_names,
+            "inactive_R_names_count": int(np.sum(~active_mask_full)),
         }
     }
 
