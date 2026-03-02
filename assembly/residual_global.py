@@ -44,7 +44,9 @@ def _ctx_tag(ctx: NonlinearContext) -> str:
 def _get_penalty_cfg(cfg) -> tuple[str, float, str]:
     nl = getattr(cfg, "nonlinear", None)
     mode = str(getattr(nl, "sanitize_mode", "penalty")).strip().lower()
-    if mode not in ("penalty", "abort"):
+    if mode in ("raise", "abort", "none"):
+        mode = "abort"
+    elif mode != "penalty":
         mode = "penalty"
     penalty_value = float(getattr(nl, "penalty_value", 1.0e20))
     penalty_scope = str(getattr(nl, "penalty_scope", "interface_only")).strip().lower()
@@ -153,6 +155,67 @@ def _validate_props_before_residual(props: Props, *, ctx: NonlinearContext, stag
         _require_finite_array("hvap_l", np.asarray(props.hvap_l, dtype=np.float64), ctx=ctx, stage=stage)
     if props.h_vap_if is not None:
         _require_finite_scalar("h_vap_if", float(props.h_vap_if), ctx=ctx, stage=stage)
+
+
+def _summarize_mass_fractions(Y: np.ndarray, name: str) -> Dict[str, Any]:
+    info: Dict[str, Any] = {}
+    arr = np.asarray(Y, dtype=np.float64)
+    if arr.size == 0:
+        return info
+    info[f"{name}_min"] = float(np.min(arr))
+    info[f"{name}_max"] = float(np.max(arr))
+    if arr.ndim == 2:
+        s = np.sum(arr, axis=0)
+        if s.size:
+            info[f"{name}_sum_min"] = float(np.min(s))
+            info[f"{name}_sum_max"] = float(np.max(s))
+            info[f"{name}_sum_dev_max"] = float(np.max(np.abs(s - 1.0)))
+    else:
+        s = float(np.sum(arr))
+        info[f"{name}_sum"] = s
+        info[f"{name}_sum_dev"] = float(abs(s - 1.0))
+    return info
+
+
+def _summarize_state_for_penalty(ctx: NonlinearContext, u: np.ndarray) -> Dict[str, Any]:
+    info: Dict[str, Any] = {}
+    try:
+        state = ctx.make_state(u)
+    except Exception as exc:
+        info["state_summary_error"] = f"{type(exc).__name__}: {exc}"
+        return info
+
+    try:
+        info["Tg_min"] = float(np.min(state.Tg)) if state.Tg.size else np.nan
+        info["Tg_max"] = float(np.max(state.Tg)) if state.Tg.size else np.nan
+    except Exception:
+        pass
+    try:
+        info["Tl_min"] = float(np.min(state.Tl)) if state.Tl.size else np.nan
+        info["Tl_max"] = float(np.max(state.Tl)) if state.Tl.size else np.nan
+    except Exception:
+        pass
+    try:
+        info["Ts"] = float(state.Ts)
+    except Exception:
+        pass
+    try:
+        info["Rd"] = float(state.Rd)
+    except Exception:
+        pass
+    try:
+        info["mpp"] = float(state.mpp)
+    except Exception:
+        pass
+    try:
+        info.update(_summarize_mass_fractions(state.Yg, "Yg"))
+    except Exception:
+        pass
+    try:
+        info.update(_summarize_mass_fractions(state.Yl, "Yl"))
+    except Exception:
+        pass
+    return info
 
 
 def _sanitize_mass_fractions(Y: np.ndarray, eps: float = 1.0e-30) -> np.ndarray:
@@ -1088,8 +1151,101 @@ def residual_only(u: np.ndarray, ctx: NonlinearContext) -> np.ndarray:
     """
     Wrapper for solvers that only accept residuals.
     """
-    res, _ = build_global_residual(u, ctx)
+    res, _ = residual_only_safe(u, ctx, phase="residual_only")
     return res
+
+
+def residual_only_safe(
+    u: np.ndarray,
+    ctx: NonlinearContext,
+    *,
+    phase: str = "",
+) -> Tuple[np.ndarray, Dict[str, Any]]:
+    """
+    Safe residual wrapper that converts any residual failure or non-finite output
+    into a penalty residual (unless sanitize_mode is abort/raise).
+    """
+    u = np.asarray(u, dtype=np.float64)
+    cfg = ctx.cfg
+    layout = ctx.layout
+    sanitize_mode, penalty_value, penalty_scope = _get_penalty_cfg(cfg)
+
+    meta = getattr(ctx, "meta", None)
+    if meta is None or not isinstance(meta, dict):
+        meta = {}
+        try:
+            ctx.meta = meta
+        except Exception:
+            pass
+
+    def _note_penalty(reason: Exception, stage: str, extra: Dict[str, Any]) -> None:
+        meta["n_penalty_residual"] = int(meta.get("n_penalty_residual", 0)) + 1
+        exc_type = type(reason).__name__
+        exc_msg = str(reason)
+        if phase:
+            meta["penalty_last_reason"] = f"{stage}:{phase}:{exc_type}: {exc_msg}"
+            meta["penalty_last_phase"] = str(phase)
+        else:
+            meta["penalty_last_reason"] = f"{stage}:{exc_type}: {exc_msg}"
+        meta["penalty_last_stage"] = str(stage)
+        if extra:
+            meta["penalty_last_extra"] = dict(extra)
+
+    try:
+        res, diag = build_global_residual(u, ctx)
+    except Exception as exc:
+        if sanitize_mode == "abort":
+            raise
+        extra = {
+            "phase": str(phase),
+            "stage": "exception",
+            "exc_type": type(exc).__name__,
+            "exc_msg": str(exc),
+        }
+        extra.update(_summarize_state_for_penalty(ctx, u))
+        _note_penalty(exc, "exception", extra)
+        return _penalty_residual(
+            u,
+            layout,
+            exc,
+            scale=penalty_value,
+            scope=penalty_scope,
+            ctx=ctx,
+            stage="exception",
+            extra=extra,
+        )
+
+    if res.size and (not np.all(np.isfinite(res))):
+        bad_mask = ~np.isfinite(res)
+        n_bad = int(np.count_nonzero(bad_mask))
+        res_min = float(np.nanmin(res)) if res.size else float("nan")
+        res_max = float(np.nanmax(res)) if res.size else float("nan")
+        exc = ValueError(
+            f"Non-finite residual: n_bad={n_bad} min={res_min:.6g} max={res_max:.6g}"
+        )
+        if sanitize_mode == "abort":
+            raise exc
+        extra = {
+            "phase": str(phase),
+            "stage": "nonfinite_residual",
+            "n_bad": n_bad,
+            "res_min": res_min,
+            "res_max": res_max,
+        }
+        extra.update(_summarize_state_for_penalty(ctx, u))
+        _note_penalty(exc, "nonfinite_residual", extra)
+        return _penalty_residual(
+            u,
+            layout,
+            exc,
+            scale=penalty_value,
+            scope=penalty_scope,
+            ctx=ctx,
+            stage="nonfinite_residual",
+            extra=extra,
+        )
+
+    return res, diag
 
 
 def residual_only_owned_rows(

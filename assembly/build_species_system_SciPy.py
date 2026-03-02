@@ -152,6 +152,14 @@ def build_gas_species_system_global(
             J_iface_full = np.asarray(interface_evap["J_full"], dtype=np.float64).reshape(-1)
         if J_iface_full.shape[0] != Ns_full:
             raise ValueError(f"interface_evap['J_full'] length {J_iface_full.shape[0]} != Ns_full={Ns_full}")
+    active_mask_full = None
+    if interface_evap is not None and "active_mask_full" in interface_evap:
+        try:
+            active_mask_full = np.asarray(interface_evap["active_mask_full"], dtype=bool).reshape(-1)
+            if active_mask_full.shape[0] != Ns_full:
+                active_mask_full = None
+        except Exception:
+            active_mask_full = None
 
     diag["species"]["condensable"] = {
         "name": condensable_name,
@@ -160,12 +168,43 @@ def build_gas_species_system_global(
         "Yg_eq": Yg_eq_face,
     }
 
-    # Farfield composition map for solved species
-    seed = float(getattr(cfg.initial, "Y_seed", 1e-12))
+    # Farfield composition map for solved species (missing -> default 0)
+    Yg_far_dict = getattr(cfg.initial, "Yg", {}) or {}
+    Y_far_default = float(getattr(cfg.initial, "Y_far_default", 0.0))
     Y_far_map: Dict[str, float] = {}
+    missing_far = []
     for name in layout.gas_species_reduced:
-        Y_far_map[name] = float(cfg.initial.Yg.get(name, seed))
-    diag["bc"]["outer"] = {"type": "Dirichlet_all_solved", "Y_far_preview": Y_far_map}
+        if name in Yg_far_dict:
+            Y_far_map[name] = float(Yg_far_dict[name])
+        else:
+            Y_far_map[name] = Y_far_default
+            missing_far.append(name)
+    diag["bc"]["outer"] = {
+        "type": "Dirichlet_all_solved",
+        "Y_far_default": Y_far_default,
+        "missing_solved_count": len(missing_far),
+        "missing_solved_preview": missing_far[:30],
+        "Y_far_preview_nonzero": {k: v for k, v in Y_far_map.items() if abs(v) > 0.0},
+    }
+    sum_specified = 0.0
+    for spec_name, value in Yg_far_dict.items():
+        try:
+            sum_specified += float(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"cfg.initial.Yg[{spec_name!r}] must be numeric, got {value!r}") from exc
+    sum_solved_far = 0.0
+    for name in layout.gas_species_reduced:
+        sum_solved_far += float(Y_far_map[name])
+    diag["bc"]["outer"]["sum_specified"] = sum_specified
+    diag["bc"]["outer"]["sum_solved_far"] = sum_solved_far
+    if sum_specified > 1.0 + 1.0e-12:
+        raise ValueError(
+            f"cfg.initial.Yg sums to {sum_specified:.6g} (> 1). Check farfield composition."
+        )
+    if sum_specified < 1.0 - 1.0e-12:
+        diag["bc"]["outer"]["warnings"] = [
+            "sum_specified < 1; closure species may carry the remainder.",
+        ]
 
     # Optional convection toggle
     convection_enabled = bool(getattr(cfg.physics, "stefan_velocity", False) and getattr(cfg.physics, "species_convection", False))
@@ -194,7 +233,15 @@ def build_gas_species_system_global(
 
             # Left face: interface flux override if provided; else fallback to Dirichlet (cond) or zero-flux
             if ig == 0:
+                use_flux = False
                 if J_iface_full is not None:
+                    use_flux = True
+                    if active_mask_full is not None:
+                        if k_full >= active_mask_full.shape[0] or not active_mask_full[k_full]:
+                            use_flux = False
+                        elif not np.isfinite(J_iface_full[k_full]):
+                            use_flux = False
+                if use_flux:
                     A_if = float(grid.A_f[iface_f])
                     J_L = float(J_iface_full[k_full])
                     b_i += A_if * J_L  # positive outward flux increases RHS for interface-adjacent gas cell
@@ -266,10 +313,12 @@ def build_gas_species_system_global(
         u_out = float(u_face[grid.Nc])
         if u_out < 0.0:
             # Build full-length farfield vector in mechanism order
-            seed = float(getattr(cfg.initial, "Y_seed", 1e-12))
             Y_far_full = np.zeros((layout.Ns_g_full,), dtype=np.float64)
             for idx_full, spec_name in enumerate(layout.gas_species_full):
-                Y_far_full[idx_full] = float(cfg.initial.Yg.get(spec_name, seed))
+                if spec_name in Yg_far_dict:
+                    Y_far_full[idx_full] = float(Yg_far_dict[spec_name])
+                else:
+                    Y_far_full[idx_full] = 0.0
             J_conv_all[:, grid.Nc] = float(props.rho_g[-1]) * u_out * Y_far_full
 
         for k_red in range(layout.Ns_g_eff):
@@ -287,12 +336,11 @@ def build_gas_species_system_global(
                 b[row] -= S_conv
 
     # Outer boundary Dirichlet for all solved species
-    seed = float(getattr(cfg.initial, "Y_seed", 1e-12))
     ig_bc = Ng - 1
     for k_red in range(layout.Ns_g_eff):
         row_bc = layout.idx_Yg(k_red, ig_bc)
         name = layout.gas_species_reduced[k_red]
-        Y_far = float(cfg.initial.Yg.get(name, seed))
+        Y_far = float(Y_far_map[name])
         A[row_bc, :] = 0.0
         A[row_bc, row_bc] = 1.0
         b[row_bc] = Y_far

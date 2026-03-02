@@ -24,6 +24,150 @@ from parallel.mat_prealloc import (
 logger = logging.getLogger(__name__)
 
 
+def _penalty_used(diag: Optional[Dict[str, Any]]) -> bool:
+    if not isinstance(diag, dict):
+        return False
+    return bool(diag.get("penalty", {}).get("penalty_used", False))
+
+
+def _record_mfpc_fd_failure(
+    ctx: NonlinearContext,
+    *,
+    phase: str,
+    col_id: Optional[int] = None,
+    cols: Optional[List[int]] = None,
+    diag: Optional[Dict[str, Any]] = None,
+    exc: Optional[Exception] = None,
+    u_phys: Optional[np.ndarray] = None,
+    x0: Optional[np.ndarray] = None,
+    dx: Optional[float] = None,
+    comm=None,
+) -> None:
+    meta = getattr(ctx, "meta", None)
+    if meta is None or not isinstance(meta, dict):
+        meta = {}
+        try:
+            ctx.meta = meta
+        except Exception:
+            return
+
+    rank = None
+    if comm is not None:
+        try:
+            rank = int(comm.getRank())
+        except Exception:
+            rank = None
+
+    entry: Dict[str, Any] = {
+        "phase": str(phase),
+        "col_id": int(col_id) if col_id is not None else None,
+        "cols": [int(c) for c in cols] if cols else None,
+        "rank": rank,
+    }
+    if exc is not None:
+        entry["exc_type"] = type(exc).__name__
+        entry["exc_msg"] = str(exc)
+
+    if diag is not None:
+        penalty = diag.get("penalty", {}) if isinstance(diag, dict) else {}
+        if isinstance(penalty, dict):
+            entry["penalty_stage"] = penalty.get("penalty_stage")
+            entry["penalty_reason"] = penalty.get("penalty_reason")
+
+    if u_phys is not None and u_phys.size:
+        try:
+            entry["u_min"] = float(np.min(u_phys))
+            entry["u_max"] = float(np.max(u_phys))
+        except Exception:
+            pass
+
+    if x0 is not None and col_id is not None:
+        try:
+            entry["x0_val"] = float(x0[col_id])
+        except Exception:
+            pass
+    if dx is not None:
+        entry["dx"] = float(dx)
+
+    meta["mfpc_fd_fail_count"] = int(meta.get("mfpc_fd_fail_count", 0)) + 1
+    meta["mfpc_fd_last_fail"] = dict(entry)
+    meta["mfpc_fd_fail_local"] = True
+
+    reason = None
+    if exc is not None:
+        reason = f"{type(exc).__name__}: {exc}"
+    elif isinstance(diag, dict):
+        reason = diag.get("penalty", {}).get("penalty_reason")
+    if not reason:
+        reason = "penalty_used"
+    meta["mfpc_fd_fail_reason"] = str(reason)
+
+    try:
+        logger.warning(
+            "[MFPC_FD_FAIL][rank=%s] phase=%s col=%s cols=%s reason=%s",
+            rank,
+            phase,
+            entry["col_id"],
+            entry.get("cols"),
+            reason,
+        )
+    except Exception:
+        pass
+
+
+def _emit_mfpc_fd_fail_global(ctx: NonlinearContext, comm) -> None:
+    meta = getattr(ctx, "meta", None)
+    if meta is None or not isinstance(meta, dict):
+        return
+    local_fail = bool(meta.get("mfpc_fd_fail_local", False))
+    payload: Dict[str, Any] = {}
+    last = meta.get("mfpc_fd_last_fail", {})
+    if isinstance(last, dict):
+        payload.update(last)
+    if "rank" not in payload:
+        try:
+            payload["rank"] = int(comm.getRank())
+        except Exception:
+            payload["rank"] = None
+    payload["reason"] = meta.get("mfpc_fd_fail_reason", "")
+
+    try:
+        from mpi4py import MPI  # type: ignore
+
+        mpicomm = comm.tompi4py()
+        gathered = mpicomm.gather({"flag": local_fail, "payload": payload}, root=0)
+        if mpicomm.rank != 0:
+            return
+        any_fail = any(item.get("flag", False) for item in gathered)
+        n_fail = sum(1 for item in gathered if item.get("flag", False))
+        if any_fail:
+            first = next(item.get("payload") for item in gathered if item.get("flag", False))
+            logger.error(
+                "MFPC_FD_FAIL_GLOBAL: any_rank=%s n_ranks=%d first_rank=%s phase=%s col=%s reason=%s",
+                True,
+                int(n_fail),
+                first.get("rank"),
+                first.get("phase"),
+                first.get("col_id"),
+                first.get("reason"),
+            )
+        else:
+            logger.info(
+                "MFPC_FD_FAIL_GLOBAL: any_rank=%s n_ranks=%d",
+                False,
+                int(n_fail),
+            )
+    except Exception:
+        if local_fail:
+            logger.warning(
+                "MFPC_FD_FAIL_GLOBAL: rank=%s phase=%s col=%s reason=%s (mpi unavailable)",
+                payload.get("rank"),
+                payload.get("phase"),
+                payload.get("col_id"),
+                payload.get("reason"),
+            )
+
+
 def _get_petsc():
     try:
         bootstrap_mpi_before_petsc()
@@ -103,7 +247,7 @@ def _build_sparse_fd_jacobian_serial(
     fd_jac_diag_damping = float(getattr(petsc_cfg, "fd_jac_diag_damping", 1.0)) if petsc_cfg else 1.0
     debug_fd_col = os.environ.get("DROPLET_FD_J_DEBUG_COL", "0") == "1"
 
-    from assembly.residual_global import residual_only
+    from assembly import residual_global as residual_mod
 
     def _x_to_u_phys(x_arr: np.ndarray) -> np.ndarray:
         if x_space in ("physical", "phys", "unscaled"):
@@ -119,19 +263,70 @@ def _build_sparse_fd_jacobian_serial(
             return res_phys / scale_F_safe
         raise ValueError(f"Unknown petsc_f_space={f_space!r}")
 
-    def _residual_with_phase(u_phys: np.ndarray, phase: str) -> np.ndarray:
+    def _residual_with_phase(
+        u_phys: np.ndarray,
+        phase: str,
+        *,
+        col_id: Optional[int] = None,
+        cols: Optional[List[int]] = None,
+        x0_ref: Optional[np.ndarray] = None,
+        dx: Optional[float] = None,
+    ) -> Tuple[np.ndarray, Dict[str, Any]]:
         prev_phase = get_gas_eval_phase()
         prev_tag = layout_mod.get_apply_u_tag()
         set_gas_eval_phase(phase)
         layout_mod.set_apply_u_tag(phase)
         try:
-            return residual_only(u_phys, ctx)
+            try:
+                res, diag = residual_mod.residual_only_safe(u_phys, ctx, phase=phase)
+            except Exception as exc:
+                nl = getattr(ctx.cfg, "nonlinear", None)
+                penalty_value = float(getattr(nl, "penalty_value", 1.0e20))
+                penalty_scope = str(getattr(nl, "penalty_scope", "interface_only"))
+                res, diag = residual_mod._penalty_residual(
+                    u_phys,
+                    ctx.layout,
+                    exc,
+                    scale=penalty_value,
+                    scope=penalty_scope,
+                    ctx=ctx,
+                    stage="mfpc_fd_exception",
+                    extra={"stage": "mfpc_fd_exception", "phase": phase},
+                )
+                _record_mfpc_fd_failure(
+                    ctx,
+                    phase=phase,
+                    col_id=col_id,
+                    cols=cols,
+                    diag=diag,
+                    exc=exc,
+                    u_phys=u_phys,
+                    x0=x0_ref,
+                    dx=dx,
+                    comm=comm,
+                )
+                return res, diag
         finally:
             layout_mod.set_apply_u_tag(prev_tag)
             set_gas_eval_phase(prev_phase)
 
+        if _penalty_used(diag):
+            _record_mfpc_fd_failure(
+                ctx,
+                phase=phase,
+                col_id=col_id,
+                cols=cols,
+                diag=diag,
+                exc=None,
+                u_phys=u_phys,
+                x0=x0_ref,
+                dx=dx,
+                comm=comm,
+            )
+        return res, diag
+
     u0_phys = _x_to_u_phys(x0)
-    r0_phys = _residual_with_phase(u0_phys, "MFPC_FD_base")
+    r0_phys, _diag0 = _residual_with_phase(u0_phys, "MFPC_FD_base", x0_ref=x0)
     if not np.all(np.isfinite(r0_phys)):
         r0_phys = np.where(np.isfinite(r0_phys), r0_phys, 1.0e20)
     r0_eval = _res_phys_to_eval(r0_phys)
@@ -209,12 +404,79 @@ def _build_sparse_fd_jacobian_serial(
             phase = f"MFPC_FD_col_{cols_in_color[0]}"
         else:
             phase = "MFPC_FD_cols_" + "_".join(str(c) for c in cols_in_color)
-        r_phys = _residual_with_phase(u_phys, phase)
+        r_phys, diag = _residual_with_phase(
+            u_phys,
+            phase,
+            cols=[int(c) for c in cols_in_color],
+            x0_ref=x0,
+        )
+        n_fd_calls += 1
+
+        if _penalty_used(diag) and len(cols_in_color) > 1:
+            # Fallback: evaluate each column individually to pinpoint failures.
+            for j in cols_in_color:
+                x_work[j] = x0[j]
+            for j in cols_in_color:
+                x_work[j] = x0[j] + dx_by_col[j]
+                u_phys_j = _x_to_u_phys(x_work)
+                phase_j = f"MFPC_FD_col_{j}"
+                r_phys_j, _diag_j = _residual_with_phase(
+                    u_phys_j,
+                    phase_j,
+                    col_id=int(j),
+                    x0_ref=x0,
+                    dx=dx_by_col[j],
+                )
+                n_fd_calls += 1
+                if not np.all(np.isfinite(r_phys_j)):
+                    r_phys_j = np.where(np.isfinite(r_phys_j), r_phys_j, 1.0e20)
+                r_eval_j = _res_phys_to_eval(r_phys_j)
+                diff_j = r_eval_j - r0_eval
+
+                rows = col_rows[j]
+                if rows:
+                    dx = dx_by_col[j]
+                    rows_arr = np.asarray(rows, dtype=np.int64)
+                    vals = diff_j[rows_arr] / dx
+                    if drop_tol > 0.0:
+                        mask = np.abs(vals) >= drop_tol
+                        rows_use = rows_arr[mask]
+                        vals_use = vals[mask]
+                    else:
+                        rows_use = rows_arr
+                        vals_use = vals
+
+                    nnz_col = int(vals_use.size)
+                    col_norm_inf = float(np.max(np.abs(vals_use))) if nnz_col else 0.0
+                    col_count += 1
+                    col_norm_min = min(col_norm_min, col_norm_inf)
+                    col_norm_max = max(col_norm_max, col_norm_inf)
+
+                    if fd_jac_min_col_norm > 0.0 and col_norm_inf < fd_jac_min_col_norm:
+                        suspicious_cols.append(
+                            {"col": int(j), "norm_inf": col_norm_inf, "nnz": nnz_col}
+                        )
+                        if debug_fd_col:
+                            logger.warning(
+                                "[FD_J_DEBUG][rank=%d] column i=%d looks nearly zero: ||col||_inf=%.3e nnz=%d",
+                                int(comm.getRank()),
+                                int(j),
+                                col_norm_inf,
+                                nnz_col,
+                            )
+                        if fd_jac_diag_damping > 0.0:
+                            P.setValue(int(j), int(j), float(fd_jac_diag_damping), addv=True)
+
+                    for row, val in zip(rows_use, vals_use):
+                        P.setValue(int(row), int(j), float(val), addv=False)
+
+                x_work[j] = x0[j]
+            continue
+
         if not np.all(np.isfinite(r_phys)):
             r_phys = np.where(np.isfinite(r_phys), r_phys, 1.0e20)
         r_eval = _res_phys_to_eval(r_phys)
         diff = r_eval - r0_eval
-        n_fd_calls += 1
 
         for j in cols_in_color:
             rows = col_rows[j]
@@ -319,6 +581,8 @@ def _build_sparse_fd_jacobian_mpi(
     meta = getattr(ctx, "meta", None)
     if meta is None or not isinstance(meta, dict):
         meta = {}
+    meta["mfpc_fd_fail_local"] = False
+    meta["mfpc_fd_fail_reason"] = ""
     scale_F = np.asarray(meta.get("residual_scale_F", np.ones_like(x0)), dtype=np.float64)
     if scale_F.shape != x0.shape:
         raise ValueError(f"residual_scale_F shape {scale_F.shape} does not match x0 {x0.shape}")
@@ -327,7 +591,7 @@ def _build_sparse_fd_jacobian_mpi(
     f_space = str(meta.get("petsc_f_space", "physical")).lower()
 
     from assembly.jacobian_pattern_dist import LocalJacPattern
-    from assembly.residual_global import residual_only
+    from assembly import residual_global as residual_mod
     from assembly.residual_local import ResidualLocalCtx, pack_local_to_layout
     from parallel.dm_manager import global_to_local
 
@@ -515,17 +779,66 @@ def _build_sparse_fd_jacobian_mpi(
     if rows_layout.size and (rows_layout.min() < 0 or rows_layout.max() >= N):
         raise RuntimeError("[FD Jacobian] layout rows out of bounds for permutation.")
 
-    def _residual_owned_with_phase(u_phys: np.ndarray, phase: str) -> np.ndarray:
+    def _residual_owned_with_phase(
+        u_phys: np.ndarray,
+        phase: str,
+        *,
+        col_id: Optional[int] = None,
+        x0_ref: Optional[np.ndarray] = None,
+        dx: Optional[float] = None,
+    ) -> Tuple[np.ndarray, Dict[str, Any]]:
         prev_phase = get_gas_eval_phase()
         prev_tag = layout_mod.get_apply_u_tag()
         set_gas_eval_phase(phase)
         layout_mod.set_apply_u_tag(phase)
         try:
-            r_full = residual_only(u_phys, ctx)
-            return r_full[rows_layout]
+            try:
+                r_full, diag = residual_mod.residual_only_safe(u_phys, ctx, phase=phase)
+            except Exception as exc:
+                nl = getattr(ctx.cfg, "nonlinear", None)
+                penalty_value = float(getattr(nl, "penalty_value", 1.0e20))
+                penalty_scope = str(getattr(nl, "penalty_scope", "interface_only"))
+                r_full, diag = residual_mod._penalty_residual(
+                    u_phys,
+                    ctx.layout,
+                    exc,
+                    scale=penalty_value,
+                    scope=penalty_scope,
+                    ctx=ctx,
+                    stage="mfpc_fd_exception",
+                    extra={"stage": "mfpc_fd_exception", "phase": phase},
+                )
+                _record_mfpc_fd_failure(
+                    ctx,
+                    phase=phase,
+                    col_id=col_id,
+                    cols=None,
+                    diag=diag,
+                    exc=exc,
+                    u_phys=u_phys,
+                    x0=x0_ref,
+                    dx=dx,
+                    comm=comm,
+                )
+                return r_full[rows_layout], diag
         finally:
             layout_mod.set_apply_u_tag(prev_tag)
             set_gas_eval_phase(prev_phase)
+
+        if _penalty_used(diag):
+            _record_mfpc_fd_failure(
+                ctx,
+                phase=phase,
+                col_id=col_id,
+                cols=None,
+                diag=diag,
+                exc=None,
+                u_phys=u_phys,
+                x0=x0_ref,
+                dx=dx,
+                comm=comm,
+            )
+        return r_full[rows_layout], diag
 
     pattern_global = build_jacobian_pattern(ctx.cfg, ctx.grid_ref, ctx.layout)
     indptr_global = np.asarray(pattern_global.indptr, dtype=np.int64)
@@ -601,6 +914,7 @@ def _build_sparse_fd_jacobian_mpi(
             "max_diag_abs_local": 0.0,
             "pattern_local": pattern_local,
         }
+        _emit_mfpc_fd_fail_global(ctx, comm)
         return P, stats
 
     owner_map = build_owner_map_from_ownership_ranges(ownership_ranges)
@@ -668,7 +982,7 @@ def _build_sparse_fd_jacobian_mpi(
     cols_to_perturb = np.asarray(sorted(col_to_rows.keys()), dtype=PETSc.IntType)
     rows_global_list = rows_global_dm
     u0_phys = _x_to_u_phys(x0)
-    r0_phys = _residual_owned_with_phase(u0_phys, "MFPC_FD_base")
+    r0_phys, _diag0 = _residual_owned_with_phase(u0_phys, "MFPC_FD_base", x0_ref=x0)
     if debug_fd:
         try:
             meta = getattr(ctx, "meta", None)
@@ -785,7 +1099,13 @@ def _build_sparse_fd_jacobian_mpi(
                 debug_fd_logged = True
         u1_phys = _x_to_u_phys(x_work)
         phase = f"MFPC_FD_col_{j}"
-        r1_phys = _residual_owned_with_phase(u1_phys, phase)
+        r1_phys, _diag1 = _residual_owned_with_phase(
+            u1_phys,
+            phase,
+            col_id=int(j),
+            x0_ref=x0,
+            dx=dx,
+        )
         if not np.all(np.isfinite(r1_phys)):
             r1_phys = np.where(np.isfinite(r1_phys), r1_phys, 1.0e20)
         r1_eval = _res_phys_to_eval_local(r1_phys, rows_layout)
@@ -874,6 +1194,7 @@ def _build_sparse_fd_jacobian_mpi(
         "min_col_norm": float(fd_jac_min_col_norm),
         "diag_damping": float(fd_jac_diag_damping),
     }
+    _emit_mfpc_fd_fail_global(ctx, comm)
     return P, stats
 
 
