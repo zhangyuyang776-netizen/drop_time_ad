@@ -8,6 +8,7 @@ import numpy as np
 
 from core.types import CaseConfig, Grid1D, Props, State
 from core.layout import UnknownLayout
+from core.simplex import project_Y_cellwise_masked
 from physics.interface_bc import build_interface_coeffs
 from properties.equilibrium import build_equilibrium_model, compute_interface_equilibrium
 from properties.compute_props import get_or_build_models
@@ -187,6 +188,51 @@ def post_correct_interface_after_remap(
     if iface_fill is not None and "Yg_sat" in iface_fill:
         Yg_sat_fallback = np.asarray(iface_fill["Yg_sat"], dtype=np.float64)
 
+    def _build_active_mask_full(n_full: int) -> np.ndarray:
+        gas_names = list(getattr(cfg.species, "gas_species_full", []) or [])
+        if len(gas_names) != n_full:
+            return np.zeros((n_full,), dtype=bool)
+        name_to_idx = {name: i for i, name in enumerate(gas_names)}
+        active = np.zeros((n_full,), dtype=bool)
+
+        # Background: explicitly provided farfield species with positive values
+        Yg_far_dict = getattr(getattr(cfg, "initial", None), "Yg", {}) or {}
+        for name, val in Yg_far_dict.items():
+            if name in name_to_idx:
+                try:
+                    if float(val) > 0.0:
+                        active[name_to_idx[name]] = True
+                except Exception:
+                    continue
+
+        # Condensables: interface config or liq2gas_map fallback
+        cond_gas: list[str] = []
+        iface_cfg = getattr(getattr(cfg, "physics", None), "interface", None)
+        if iface_cfg is not None:
+            eq_cfg = getattr(iface_cfg, "equilibrium", None)
+            cond_gas = list(getattr(eq_cfg, "condensables_gas", []) or [])
+        if not cond_gas:
+            cond_gas = list(getattr(getattr(cfg, "species", None), "liq2gas_map", {}).values())
+        for name in cond_gas:
+            if name in name_to_idx:
+                active[name_to_idx[name]] = True
+
+        # Closure species
+        gas_balance = getattr(getattr(cfg, "species", None), "gas_balance_species", None)
+        if gas_balance in name_to_idx:
+            active[name_to_idx[gas_balance]] = True
+
+        return active
+
+    def _filter_to_active(Y_full: np.ndarray) -> np.ndarray:
+        Y_full = np.asarray(Y_full, dtype=np.float64).reshape(-1)
+        active_mask = _build_active_mask_full(Y_full.size)
+        if not active_mask.any():
+            return Y_full
+        if float(np.sum(Y_full[active_mask])) <= 0.0:
+            return np.zeros_like(Y_full)
+        return project_Y_cellwise_masked(Y_full, active_mask, min_Y=0.0, axis=0)
+
     if bool(getattr(cfg.checks, "enforce_T_bounds", False)):
         T_min = float(cfg.checks.T_min)
         T_max = float(cfg.checks.T_max)
@@ -322,6 +368,7 @@ def post_correct_interface_after_remap(
                 Yg_sat = Yg_sat_fallback
             if Yg_sat is None:
                 Yg_sat = np.asarray(state.Yg[:, 0], dtype=np.float64)
+            Yg_sat = _filter_to_active(Yg_sat)
             evap_out = _apply_iface_solution(
                 state=state,
                 evaporation=evap_out,

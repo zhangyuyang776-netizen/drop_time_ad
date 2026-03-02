@@ -6,7 +6,7 @@ import numpy as np
 
 from core.types import CaseConfig, Grid1D, RemapPlan, State
 from core.layout import UnknownLayout
-from core.simplex import project_Y_cellwise
+from core.simplex import project_Y_cellwise, project_Y_cellwise_masked
 
 logger = logging.getLogger(__name__)
 
@@ -282,9 +282,11 @@ def remap_state_to_new_grid(
 
     fill_Ts = None
     fill_Yg = None
+    fill_active_mask = None
     if iface_fill is not None:
         fill_Ts = iface_fill.get("Ts", None)
         fill_Yg = iface_fill.get("Yg_sat", None)
+        fill_active_mask = iface_fill.get("active_mask_full", None)
         if fill_Ts is not None and not np.isfinite(float(fill_Ts)):
             raise ValueError("iface_fill['Ts'] must be finite.")
         if fill_Yg is not None:
@@ -294,6 +296,69 @@ def remap_state_to_new_grid(
                     "iface_fill['Yg_sat'] must have shape "
                     f"({layout.Ns_g_full},), got {fill_Yg.shape}."
                 )
+        if fill_active_mask is not None:
+            fill_active_mask = np.asarray(fill_active_mask, dtype=bool)
+            if fill_active_mask.shape != (layout.Ns_g_full,):
+                fill_active_mask = None
+
+    min_Y_state = float(getattr(cfg.checks, "min_Y", 1.0e-30))
+    if min_Y_state < 0.0:
+        min_Y_state = 0.0
+    tol_sumY = float(getattr(cfg.checks, "sumY_tol", 1.0e-10))
+
+    def _build_active_mask_full() -> np.ndarray:
+        gas_names = list(getattr(cfg.species, "gas_species_full", []) or [])
+        if len(gas_names) != layout.Ns_g_full:
+            return np.zeros((layout.Ns_g_full,), dtype=bool)
+        name_to_idx = {name: i for i, name in enumerate(gas_names)}
+        active = np.zeros((layout.Ns_g_full,), dtype=bool)
+        Yg_far_dict = getattr(getattr(cfg, "initial", None), "Yg", {}) or {}
+        for name, val in Yg_far_dict.items():
+            if name in name_to_idx:
+                try:
+                    if float(val) > 0.0:
+                        active[name_to_idx[name]] = True
+                except Exception:
+                    continue
+        cond_gas: list[str] = []
+        iface_cfg = getattr(getattr(cfg, "physics", None), "interface", None)
+        if iface_cfg is not None:
+            eq_cfg = getattr(iface_cfg, "equilibrium", None)
+            cond_gas = list(getattr(eq_cfg, "condensables_gas", []) or [])
+        if not cond_gas:
+            cond_gas = list(getattr(getattr(cfg, "species", None), "liq2gas_map", {}).values())
+        for name in cond_gas:
+            if name in name_to_idx:
+                active[name_to_idx[name]] = True
+        gas_balance = getattr(getattr(cfg, "species", None), "gas_balance_species", None)
+        if gas_balance in name_to_idx:
+            active[name_to_idx[gas_balance]] = True
+        return active
+
+    if fill_active_mask is None and fill_Yg is not None:
+        fill_active_mask = _build_active_mask_full()
+    if fill_active_mask is not None and fill_Yg is not None:
+        fill_Yg = np.asarray(fill_Yg, dtype=np.float64)
+        if float(np.sum(fill_Yg[fill_active_mask])) > 0.0:
+            fill_Yg = project_Y_cellwise_masked(fill_Yg, fill_active_mask, min_Y=0.0, axis=0)
+        else:
+            fill_Yg = np.zeros_like(fill_Yg)
+
+    def _needs_projection(Y: np.ndarray) -> bool:
+        if Y.size == 0:
+            return False
+        if not np.all(np.isfinite(Y)):
+            return True
+        if min_Y_state > 0.0:
+            return True
+        min_val = float(np.min(Y))
+        if min_val < -tol_sumY:
+            return True
+        sums = np.sum(Y, axis=0)
+        if sums.size == 0:
+            return False
+        max_sum_err = float(np.max(np.abs(sums - 1.0)))
+        return max_sum_err > tol_sumY
 
     # Temperatures
     if state.Tl.size:
@@ -331,8 +396,9 @@ def remap_state_to_new_grid(
                 )
         else:
             Yl_new[:, :] = state.Yl[:, :Nl]
-        # FIXED: Use simplex projection instead of clip to enforce sum(Y) = 1.0
-        Yl_new = project_Y_cellwise(Yl_new, min_Y=1e-14, axis=0)
+        # Project only if needed to enforce bounds/sum.
+        if _needs_projection(Yl_new):
+            Yl_new = project_Y_cellwise(Yl_new, min_Y=min_Y_state, axis=0)
         state.Yl = Yl_new
 
     # Gas species
@@ -346,6 +412,11 @@ def remap_state_to_new_grid(
                         state.Yg[k, :], r_f_gas_old, r_f_gas_new
                     )
                 else:
+                    if fill_active_mask is not None and not fill_active_mask[k]:
+                        Yg_new[k, :] = _remap_cellavg_overlap_spherical(
+                            state.Yg[k, :], r_f_gas_old, r_f_gas_new
+                        )
+                        continue
                     y_new, V3_new, V3_ov = _remap_cellavg_overlap_spherical_with_overlap(
                         state.Yg[k, :], r_f_gas_old, r_f_gas_new
                     )
@@ -360,12 +431,13 @@ def remap_state_to_new_grid(
                     r_f_gas_new=r_f_gas_new,
                     remap_plan=remap_plan,
                     n_liq=Nl,
-                    iface_fill_value=fill_Yg[k] if fill_Yg is not None else None,
+                    iface_fill_value=fill_Yg[k]
+                    if (fill_Yg is not None and (fill_active_mask is None or fill_active_mask[k]))
+                    else None,
                 )
-        # FIXED: Use simplex projection instead of closure reconstruction + clip
-        # This ensures sum(Y) = 1.0 with minimum perturbation, preventing
-        # cumulative error accumulation from remapping (root cause of step 269 failure)
-        Yg_new = project_Y_cellwise(Yg_new, min_Y=1e-14, axis=0)
+        # Project only if needed to enforce bounds/sum.
+        if _needs_projection(Yg_new):
+            Yg_new = project_Y_cellwise(Yg_new, min_Y=min_Y_state, axis=0)
         state.Yg = Yg_new
 
     # Keep Rd consistent with the new grid geometry.

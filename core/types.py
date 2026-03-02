@@ -350,6 +350,8 @@ class CaseNonlinear:
     # P5+: optional variable bounds (PETSc VI)
     enable_vi_bounds: bool = False
     Ts_lower: float = 250.0
+    Rd_lower: float = 1.0e-12
+    mpp_lower: float = float("-inf")
 
 
 @dataclass(slots=True)

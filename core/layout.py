@@ -729,6 +729,7 @@ def apply_u_to_state(
     *,
     tol_closure: float = 1e-12,
     clip_negative_closure: bool = False,
+    min_Y_state: Optional[float] = None,
 ) -> State:
     """Apply unknown vector to a State and reconstruct closure species."""
     u = np.asarray(u, dtype=np.float64)
@@ -843,14 +844,37 @@ def apply_u_to_state(
             phase="Liquid",
         )
 
-    # FIXED: Apply simplex projection after Newton solve to enforce sum(Y) = 1.0
-    # Newton solver doesn't know about sum constraint, so output may violate it.
-    # Simplex projection corrects with minimum perturbation.
-    if "Yg" in layout.blocks and Yg.size > 0:
-        Yg = project_Y_cellwise(Yg, min_Y=1e-14, axis=0)
+    # Apply simplex projection only when needed (avoid unnecessary perturbations).
+    if min_Y_state is None:
+        min_Y_floor = 1.0e-30
+        min_Y_state = 0.0
+    else:
+        min_Y_state = float(min_Y_state)
+        if min_Y_state < 0.0:
+            min_Y_state = 0.0
+        min_Y_floor = min_Y_state
 
-    if "Yl" in layout.blocks and Yl.size > 0:
-        Yl = project_Y_cellwise(Yl, min_Y=1e-14, axis=0)
+    def _needs_projection(Y: np.ndarray) -> bool:
+        if Y.size == 0:
+            return False
+        if not np.all(np.isfinite(Y)):
+            return True
+        if min_Y_state > 0.0:
+            return True
+        min_val = float(np.min(Y))
+        if min_val < -tol_closure:
+            return True
+        sums = np.sum(Y, axis=0)
+        if sums.size == 0:
+            return False
+        max_sum_err = float(np.max(np.abs(sums - 1.0)))
+        return max_sum_err > tol_closure
+
+    if "Yg" in layout.blocks and Yg.size > 0 and _needs_projection(Yg):
+        Yg = project_Y_cellwise(Yg, min_Y=min_Y_floor, axis=0)
+
+    if "Yl" in layout.blocks and Yl.size > 0 and _needs_projection(Yl):
+        Yl = project_Y_cellwise(Yl, min_Y=min_Y_floor, axis=0)
 
     return State(Tg=Tg, Yg=Yg, Tl=Tl, Yl=Yl, Ts=Ts, mpp=mpp, Rd=Rd)
 

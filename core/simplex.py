@@ -391,6 +391,112 @@ def project_Y_cellwise(
     return Y_proj
 
 
+def project_Y_cellwise_masked(
+    Y: np.ndarray,
+    active_mask: np.ndarray,
+    *,
+    min_Y: float = 0.0,
+    axis: int = 0,
+    check_result: bool = True,
+) -> np.ndarray:
+    """
+    Project mass fractions onto simplex within an active subset; inactive entries are fixed to 0.
+
+    Args:
+        Y: Mass fraction array, shape (Ns, Ncells) or (Ncells, Ns) or (Ns,)
+        active_mask: Boolean mask of length Ns indicating active species.
+        min_Y: Minimum value for active components (default 0.0).
+        axis: Species axis for 2D arrays.
+        check_result: Validate projection result (default True).
+    """
+    Y = np.asarray(Y, dtype=np.float64)
+    active_mask = np.asarray(active_mask, dtype=bool).reshape(-1)
+
+    if Y.ndim == 1:
+        if active_mask.size != Y.shape[0]:
+            raise ValueError("active_mask length must match Y length.")
+        if not np.any(active_mask):
+            return Y.copy()
+        y_active = Y[active_mask]
+        if min_Y > 0.0:
+            x_active = project_shifted_simplex(y_active, min_val=min_Y, z=1.0).flatten()
+        else:
+            x_active = project_simplex(y_active, z=1.0).flatten()
+        out = np.zeros_like(Y)
+        out[active_mask] = x_active
+        if check_result:
+            if abs(float(np.sum(out)) - 1.0) > 1e-10:
+                raise ValueError("Masked projection failed: sum(Y) != 1.")
+            if min_Y > 0.0:
+                min_val = float(np.min(out[active_mask]))
+                if min_val < min_Y - 1e-12:
+                    raise ValueError(
+                        f"Masked projection failed: min(active) = {min_val:.3e} < min_Y = {min_Y:.3e}"
+                    )
+            if not np.all(out[~active_mask] == 0.0):
+                raise ValueError("Inactive components must be zero after masked projection.")
+        return out
+
+    if Y.ndim != 2:
+        raise ValueError(f"Y must be 1D or 2D array, got shape {Y.shape}")
+
+    if axis == 1:
+        Y = Y.T
+
+    Ns, Ncells = Y.shape
+    if active_mask.size != Ns:
+        raise ValueError("active_mask length must match species dimension.")
+    if not np.any(active_mask):
+        return Y.T if axis == 1 else Y.copy()
+
+    # Check feasibility for active subset
+    tol = 1e-14
+    n_active = int(np.sum(active_mask))
+    if min_Y < 0.0:
+        raise ValueError("min_Y must be non-negative.")
+    if n_active * min_Y > 1.0 + tol:
+        raise ValueError(
+            f"Infeasible masked simplex: n_active*min_Y = {n_active}*{min_Y} > 1.0"
+        )
+
+    Y_proj = np.zeros_like(Y)
+    for j in range(Ncells):
+        y_active = Y[active_mask, j]
+        if min_Y > 0.0:
+            x_active = project_shifted_simplex(y_active, min_val=min_Y, z=1.0).flatten()
+        else:
+            x_active = project_simplex(y_active, z=1.0).flatten()
+        Y_proj[active_mask, j] = x_active
+
+    if axis == 1:
+        Y_proj = Y_proj.T
+
+    if check_result:
+        sum_axis = 1 if axis == 1 else 0
+        Y_sums = np.sum(Y_proj, axis=sum_axis)
+        max_sum_error = float(np.max(np.abs(Y_sums - 1.0)))
+        if max_sum_error > 1e-10:
+            raise ValueError(
+                f"Masked projection failed: max|sum(Y)-1| = {max_sum_error:.3e} > 1e-10"
+            )
+        if min_Y > 0.0:
+            min_val = float(np.min(Y_proj.take(np.where(active_mask)[0], axis=axis)))
+            if min_val < min_Y - 1e-12:
+                raise ValueError(
+                    f"Masked projection failed: min(active) = {min_val:.3e} < min_Y = {min_Y:.3e}"
+                )
+        inactive = ~active_mask
+        if np.any(inactive):
+            if axis == 0:
+                if not np.allclose(Y_proj[inactive, :], 0.0, atol=1e-14):
+                    raise ValueError("Inactive components not zero after masked projection.")
+            else:
+                if not np.allclose(Y_proj[:, inactive], 0.0, atol=1e-14):
+                    raise ValueError("Inactive components not zero after masked projection.")
+
+    return Y_proj
+
+
 def compute_projection_stats(
     Y_raw: np.ndarray,
     Y_proj: np.ndarray,
