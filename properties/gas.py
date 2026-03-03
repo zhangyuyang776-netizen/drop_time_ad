@@ -172,7 +172,22 @@ def compute_gas_props(
                 "state.Yg must be a full, normalized mechanism-length vector."
             )
 
-        gas.TPY = T, P, Y_mech
+        # Apply a minimum species composition floor before passing to Cantera.
+        # Cantera's mix_diff_coeffs returns 0 for species with Y=0 exactly, because
+        # the mixture-averaged formula is undefined (0/0) for absent species. However,
+        # the physical binary diffusivity D_{k,dominant} is always non-zero. This floor
+        # ensures Cantera computes D values consistent with the physical limiting behaviour
+        # D_{k,mix} -> D_{k,dominant_species} as Y_k -> 0 (e.g. D_{N2,C12H26} ~ 5e-6 m²/s).
+        _Y_CANTERA_MIN = 1.0e-8
+        if np.any(Y_mech < _Y_CANTERA_MIN):
+            Y_cantera = np.maximum(Y_mech, _Y_CANTERA_MIN)
+            _ycs = float(np.sum(Y_cantera))
+            if _ycs > 0.0:
+                Y_cantera /= _ycs
+        else:
+            Y_cantera = Y_mech
+
+        gas.TPY = T, P, Y_cantera
 
         rho_i = float(gas.density)
         cp_i = float(gas.cp_mass)
@@ -214,7 +229,13 @@ def compute_gas_props(
             raise ValueError(f"Expected D_mech shape ({Ns_mech},), got {D_mech.shape}")
         if np.any(~np.isfinite(D_mech)) or np.any(D_mech < 0.0):
             raise ValueError(f"Non-physical gas diffusion coeffs at cell {ig}")
-        D_floor = 1.0e-9
+        # Physically motivated diffusivity floor. Gas-phase binary diffusivities at
+        # atmospheric pressure span roughly 1e-6 to 1e-4 m²/s. Using 1e-6 m²/s as a
+        # conservative lower bound prevents degenerate (rank-deficient) Jacobian rows
+        # while remaining physically plausible for any species pair at typical conditions.
+        # The previous floor of 1e-9 was ~1000–5000x below actual binary values, causing
+        # catastrophic ill-conditioning when Y_k -> 0 near the boiling interface.
+        D_floor = 1.0e-6
         if np.any(D_mech < D_floor):
             bad = np.where(D_mech < D_floor)[0]
             bad_names = [gas.species_names[int(i)] for i in bad[:8]]

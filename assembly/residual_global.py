@@ -417,6 +417,40 @@ def _update_iface_regime(ctx: NonlinearContext, eq_result: dict, cfg) -> None:
     else:
         ctx.meta.setdefault("iface_regime", prev)
 
+    # Temperature-based override: force sat (energy-balance) regime when Ts is
+    # close to the boiling point, regardless of the psat/P hysteresis threshold.
+    #
+    # Physical motivation (cf. Millán-Merino 2021): the Stefan condition
+    #   mpp * DeltaY_eff = j_corr_b,   DeltaY_eff = Yl_b - Yg_eq_b
+    # becomes degenerate as Ts -> Tbub because Yg_eq_fuel -> 1 and DeltaY -> 0.
+    # At that point the Jacobian diagonal for mpp shrinks to ~DeltaY, causing
+    # catastrophic ill-conditioning before the psat/P threshold (sat_tol_enter)
+    # is ever reached.  Switching to the energy-balance evaporation regime well
+    # before this degenerate zone eliminates the singularity entirely.
+    T_sat_margin = (
+        float(getattr(eq_cfg, "T_sat_enter_margin", 10.0))
+        if eq_cfg is not None else 10.0
+    )
+    try:
+        ts_eff_T = float(meta.get("Ts_eff", meta.get("Ts_raw", float("nan"))))
+        tbub_T = float(meta.get("Tbub", float("nan")))
+        near_boiling = (
+            np.isfinite(ts_eff_T) and np.isfinite(tbub_T)
+            and ts_eff_T >= tbub_T - T_sat_margin
+        )
+    except Exception:
+        near_boiling = False
+
+    if near_boiling and new != "sat":
+        new = "sat"
+        ctx.meta["iface_regime"] = "sat"
+        locked = False  # temperature override supersedes regime-lock
+        if prev != "sat":
+            ctx.meta["iface_regime_switch_count"] = (
+                int(ctx.meta.get("iface_regime_switch_count", 0)) + 1
+            )
+            switched = True
+
     meta["sum_x_psat_over_P"] = float(s_val)
     meta["regime"] = new
     meta["regime_switched"] = bool(switched)

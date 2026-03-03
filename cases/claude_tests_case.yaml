@@ -52,8 +52,9 @@ physics:
       Ts_guard_dT: 5.0
       eps_bg: 1.0e-3
       Ts_sat_eps_K: 0.5
-      sat_tol_enter: 0.04
+      sat_tol_enter: 0.15       # was 0.04; enter sat regime when psat/P > 0.85
       sat_tol_exit: 0.10
+      T_sat_enter_margin: 10.0  # enter sat regime when Ts > Tbub - 10 K
 
   liquid:
     backend: p2db
