@@ -1,0 +1,889 @@
+2026-03-03 10:01:13,447 INFO [__main__] Logging to file: /home/zyy/projects/droplet_evp_claude/out/longtest/p2_accept_single_petsc_mpi_schur_with_u_output_p2db/20260303_100113/run.log
+2026-03-03 10:01:13,491 INFO [__main__] Radius stop criterion enabled: Rd_stop = 1.000000e-05 = 0.100 * Rd0 (Rd0 = 1.000000e-04).
+2026-03-03 10:03:15,058 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 2: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,058 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 3: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,059 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 4: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,059 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 5: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,059 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 6: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,059 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 7: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,060 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 8: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,060 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 9: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,060 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 10: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,060 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 11: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,061 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 12: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,061 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 13: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,061 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 14: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,061 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 15: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,062 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 16: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,062 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 17: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,062 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 18: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,062 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 19: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,063 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 20: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,063 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 21: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,063 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 22: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,063 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 23: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,064 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 24: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,064 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 25: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,064 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 26: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,064 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 27: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,065 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 28: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,065 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 29: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,065 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 30: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,065 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 31: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,066 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 32: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,066 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 33: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,066 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 34: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,066 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 35: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,067 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 36: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,067 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 37: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,067 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 38: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,072 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 88: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,073 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 92: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,073 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 95: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,074 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 96: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,074 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 97: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,074 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 98: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,273 ERROR [__main__] Step 134 failed: SNES diverged (reason=-6)
+2026-03-03 10:03:15,272 ERROR [__main__] Diagnostics extra: {'diag_sys': {}, 'message': 'SNES diverged (reason=-6)', 'interface_diag': {'t': 0.0026800000000000057, 'dt': 2e-05, 'Ts': nan, 'Rd': nan, 'mpp': nan, 'm_dot': nan, 'psat': nan, 'sum_y_cond': nan, 'eq_source': 'step_failed', 'eq_exc_type': '', 'eq_exc_msg': 'SNES diverged (reason=-6)', 'psat_source': '', 'hvap_source': '', 'latent_source': '', 'L_v': nan, 'fallback_reason': '', 'finite_ok': 'False', 'Ts_eff': nan, 'Tbub': nan, 'guard_active': '', 'clamp_active': '', 'eps_bg': '', 'penalty_used': 'False', 'penalty_reason': '', 'n_penalty_residual': 0, 'n_lambda_cap_ts': 0, 'max_Ts_trial_minus_upper': nan, 'ls_lambda': '', 'ls_clip_ts': 0, 'ls_clip_mpp': 0, 'ls_shrink_count': 0}, 'nonlinear': {'history_res_inf': [0.00822978991442369], 'message': 'SNES diverged (reason=-6)', 'extra': {'snes_reason': -6, 'snes_reason_str': '-6', 'snes_type': 'vinewtonrsls', 'linesearch_type': 'bt', 'ksp_type': 'gmres', 'pc_type': 'fieldsplit', 'ksp_reason': 2, 'ksp_reason_str': '2', 'ksp_it': 23, 'snes_iter': 0, 'jacobian_mode': 'mfpc_sparse_fd', 'n_func_eval': 7, 'n_jac_eval': 1, 'ksp_its_total': 23, 'time_func': 0.16327742696739733, 'time_jac': 0.8116085599176586, 'time_linear_total': 0.1437609288841486, 'time_total': 1.0669480538927019, 'snes_mf_enabled': True, 'pc_type_overridden': False, 'J_mat_type': 'mffd', 'P_mat_type': 'mpiaij', 'n_penalty_residual': 0, 'penalty_last_reason': '', 'penalty_last_stage': '', 'penalty_last_phase': '', 'n_lambda_cap_ts': 0, 'max_Ts_trial_minus_upper': nan, 'vi_bounds_enabled': True, 'ls_clip_ts': 0, 'ls_clip_mpp': 0, 'ls_shrink_count': 0, 'ls_lambda_last': '', 'petsc_options_prefix': 'p3acc_single_', 'snes_options_prefix': 'p3acc_single_', 'ksp_options_prefix': 'p3acc_single_', 'snes_smoke': {'smoke_enabled': False, 'max_outer_iter_original': 20, 'max_outer_iter_effective': 20, 'jacobian_mode_original': 'mfpc_sparse_fd', 'jacobian_mode_effective': 'mfpc_sparse_fd'}, 'KSP_A_type': 'mpiaij', 'KSP_P_type': 'mpiaij', 'ksp_operators': {'A_type': 'mpiaij', 'P_type': 'mpiaij'}, 'KSP_A_is_P': True, 'pmat_info': {'nz_used': 2489.0, 'nz_allocated': 2489.0}, 'mfpc_sparse_fd': {'ncolors': 0, 'n_fd_calls': 35, 'nnz_total_local': 147, 'n_local_rows': 25, 'shape': (423, 423), 'eps': 1e-08, 'drop_tol': 0.0, 'pattern_nnz_local': 147, 'prealloc_nnz_local': 147, 'cols_to_perturb': [81, 82, 83, 84, 85, 86, 87, 88, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 416, 417, 418], 'ownership_range': (348, 373), 'mpi_size': 16, 'max_diag_abs_local': 1.8367135863722248, 'pattern_local': LocalJacPattern(rows_global=array([348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360,
+       361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372],
+      dtype=int32), indptr=array([  0,   3,   9,  15,  21,  27,  33,  39,  45,  51,  57,  63,  69,
+        75,  81,  87,  93,  99, 105, 111, 117, 123, 129, 135, 141, 147]), indices=array([323, 348, 373, 344, 349, 353, 350, 351, 352, 349, 345, 350, 351,
+       352, 354, 349, 346, 350, 351, 352, 355, 349, 347, 350, 351, 352,
+       356, 349, 353, 357, 354, 355, 356, 353, 350, 354, 355, 356, 358,
+       353, 351, 354, 355, 356, 359, 353, 352, 354, 355, 356, 360, 353,
+       357, 361, 358, 359, 360, 357, 354, 358, 359, 360, 362, 357, 355,
+       358, 359, 360, 363, 357, 356, 358, 359, 360, 364, 357, 361, 365,
+       362, 363, 364, 361, 358, 362, 363, 364, 366, 361, 359, 362, 363,
+       364, 367, 361, 360, 362, 363, 364, 368, 361, 365, 369, 366, 367,
+       368, 365, 362, 366, 367, 368, 370, 365, 363, 366, 367, 368, 371,
+       365, 364, 366, 367, 368, 372, 365, 369, 374, 370, 371, 372, 369,
+       366, 370, 371, 372, 375, 369, 367, 370, 371, 372, 376, 369, 368,
+       370, 371, 372, 377], dtype=int32), shape=(423, 423), meta={'nnz_total': 147.0, 'nnz_avg': 5.88, 'nnz_max_row': 6.0, 'n_local_rows': 25.0}), 'fd_jacobian_stats': {'n_cols': 35, 'col_norm_min': 7.5608623914422126e-06, 'col_norm_max': 1.8367135863722248, 'n_suspicious_cols': 0, 'suspicious_cols': [], 'min_col_norm': 0.0, 'diag_damping': 1.0}}, 'fd_jacobian_stats': {'n_cols': 35, 'col_norm_min': 7.5608623914422126e-06, 'col_norm_max': 1.8367135863722248, 'n_suspicious_cols': 0, 'suspicious_cols': [], 'min_col_norm': 0.0, 'diag_damping': 1.0}, 'parallel_backend': 'petsc_snes_parallel', 'comm_kind': 'world', 'comm_size': 16, 'X_vec_type': 'mpi', 'F_vec_type': 'mpi', 'X_local_size': 25, 'X_ownership_range': (348, 373), 'dm_type': 'composite', 'pc_structured': {'enabled': True, 'global': {'pc_type': 'fieldsplit'}, 'ksp_prefix': 'p3acc_single_', 'options_prefix': 'p3acc_single_', 'ownership_range_source': 'arg_P', 'ownership_range': (348, 373), 'splits': {'bulk': 420, 'iface': 3}, 'split_names': ['bulk', 'iface'], 'split_sizes_local': {'bulk': 25, 'iface': 0}, 'fieldsplit': {'type': 'schur', 'plan': 'bulk_iface', 'splits': {'bulk': {'ksp_type': 'preonly', 'pc_type': 'asm', 'asm_overlap': 1, 'subdomain_ksp_type': 'preonly', 'subdomain_pc_type': 'ilu', 'asm_subdomains': 1}, 'iface': {'ksp_type': 'preonly', 'pc_type': 'asm', 'asm_overlap': 1, 'subdomain_ksp_type': 'preonly', 'subdomain_pc_type': 'lu', 'asm_subdomains': 1}}, 'subksp_error': 'getFieldSplitSubKSP failed: Error: error code 73\n[13] PCFieldSplitGetSubKSP() at /home/conda/feedstock_root/build_artifacts/petsc_1736236456220/work/src/ksp/pc/impls/fieldsplit/fieldsplit.c:2539\n[13] PCFieldSplitGetSubKSP_FieldSplit_Schur() at /home/conda/feedstock_root/build_artifacts/petsc_1736236456220/work/src/ksp/pc/impls/fieldsplit/fieldsplit.c:2030\n[13] Object is in wrong state\n[13] Must call KSPSetUp() or PCSetUp() before calling PCFieldSplitGetSubKSP(); retry failed: Error: error code 73\n[13] PCFieldSplitGetSubKSP() at /home/conda/feedstock_root/build_artifacts/petsc_1736236456220/work/src/ksp/pc/impls/fieldsplit/fieldsplit.c:2539\n[13] PCFieldSplitGetSubKSP_FieldSplit_Schur() at /home/conda/feedstock_root/build_artifacts/petsc_1736236456220/work/src/ksp/pc/impls/fieldsplit/fieldsplit.c:2030\n[13] Object is in wrong state\n[13] Must call KSPSetUp() or PCSetUp() before calling PCFieldSplitGetSubKSP()'}, 'fieldsplit_type': 'schur', 'outer_ops': {'A_type': 'None', 'P_type': 'mpiaij', 'A_from_ksp': True, 'P_from_ksp': True, 'should_disable_amat': True}, 'disable_amat_attempt': {'setUseAmat': 'ok', 'opt_pc_use_amat': '0', 'setFromOptions': 'ok', 'uses_amat_after': False}, 'uses_amat': False, 'schur_fact_type': 'lower', 'options_injected': {'fieldsplit_bulk_ksp_type': 'preonly', 'fieldsplit_bulk_pc_type': 'asm', 'fieldsplit_bulk_pc_asm_overlap': '1', 'fieldsplit_bulk_sub_ksp_type': 'preonly', 'fieldsplit_bulk_sub_pc_type': 'ilu', 'fieldsplit_iface_ksp_type': 'preonly', 'fieldsplit_iface_pc_type': 'asm', 'fieldsplit_iface_pc_asm_overlap': '1', 'fieldsplit_iface_sub_ksp_type': 'preonly', 'fieldsplit_iface_sub_pc_type': 'lu'}, 'options_skipped_cli': {}, 'options_overwritten': {'fieldsplit_bulk_ksp_type': True, 'fieldsplit_bulk_pc_type': True, 'fieldsplit_bulk_pc_asm_overlap': True, 'fieldsplit_bulk_sub_ksp_type': True, 'fieldsplit_bulk_sub_pc_type': True, 'fieldsplit_iface_ksp_type': True, 'fieldsplit_iface_pc_type': True, 'fieldsplit_iface_pc_asm_overlap': True, 'fieldsplit_iface_sub_ksp_type': True, 'fieldsplit_iface_sub_pc_type': True}, 'sub_defaults': {'default': {'ksp_type': 'preonly', 'pc_type': 'asm', 'pc_asm_overlap': 1, 'subdomain_ksp_type': 'preonly', 'subdomain_pc_type': 'ilu'}, 'by_name': {'bulk': {'ksp_type': 'preonly', 'pc_type': 'asm', 'pc_asm_overlap': 1, 'subdomain_ksp_type': 'preonly', 'subdomain_pc_type': 'ilu'}, 'iface': {'ksp_type': 'preonly', 'pc_type': 'asm', 'pc_asm_overlap': 1, 'subdomain_ksp_type': 'preonly', 'subdomain_pc_type': 'lu'}}}}, 'history_res_inf': [0.00822978991442369]}}}
+]}}}
+_type': 'preonly', 'subdomain_pc_type': 'ilu'}, 'iface': {'ksp_type': 'preonly', 'pc_type': 'asm', 'pc_asm_overlap': 1, 'subdomain_ksp_type': 'preonly', 'subdomain_pc_type': 'lu'}}}}, 'history_res_inf': [0.00822978991442369]}}}
+nes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:27,683 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:27,684 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:28,252 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:28,253 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:28,444 INFO [__main__] step=18 t=[3.400000e-04 -> 3.600000e-04] dt=2.000e-05 Ts=438.459 Rd=9.995e-05 mpp=1.235e-01 Tg[min,max]=[461.835, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=2.013e-08
+2026-03-03 10:01:28,464 INFO [__main__] Wrote u vector snapshot at step 18, t=3.600000e-04
+2026-03-03 10:01:28,465 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:28,465 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:28,466 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:29,003 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:29,004 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:29,337 INFO [__main__] step=19 t=[3.600000e-04 -> 3.800000e-04] dt=2.000e-05 Ts=439.594 Rd=9.994e-05 mpp=1.263e-01 Tg[min,max]=[462.818, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=1.749e-08
+2026-03-03 10:01:29,363 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:29,363 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:29,364 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:29,936 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:29,937 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:30,149 INFO [__main__] step=20 t=[3.800000e-04 -> 4.000000e-04] dt=2.000e-05 Ts=440.685 Rd=9.994e-05 mpp=1.289e-01 Tg[min,max]=[463.767, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=1.543e-08
+2026-03-03 10:01:30,162 INFO [__main__] Wrote u vector snapshot at step 20, t=4.000000e-04
+2026-03-03 10:01:30,163 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:30,163 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:30,178 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:30,714 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:30,715 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:30,922 INFO [__main__] step=21 t=[4.000000e-04 -> 4.200000e-04] dt=2.000e-05 Ts=441.737 Rd=9.993e-05 mpp=1.314e-01 Tg[min,max]=[464.682, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=1.371e-08
+2026-03-03 10:01:30,952 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:30,952 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:30,953 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:31,537 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:31,538 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:31,780 INFO [__main__] step=22 t=[4.200000e-04 -> 4.400000e-04] dt=2.000e-05 Ts=442.752 Rd=9.993e-05 mpp=1.338e-01 Tg[min,max]=[465.566, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=1.221e-08
+2026-03-03 10:01:31,811 INFO [__main__] Wrote u vector snapshot at step 22, t=4.400000e-04
+2026-03-03 10:01:31,812 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:31,812 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:31,812 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:32,348 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:32,349 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:32,628 INFO [__main__] step=23 t=[4.400000e-04 -> 4.600000e-04] dt=2.000e-05 Ts=443.732 Rd=9.992e-05 mpp=1.361e-01 Tg[min,max]=[466.422, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=1.078e-08
+2026-03-03 10:01:32,658 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:32,658 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:32,659 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:33,180 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:33,181 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:33,461 INFO [__main__] step=24 t=[4.600000e-04 -> 4.800000e-04] dt=2.000e-05 Ts=444.679 Rd=9.992e-05 mpp=1.383e-01 Tg[min,max]=[467.250, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=9.331e-09
+2026-03-03 10:01:33,491 INFO [__main__] Wrote u vector snapshot at step 24, t=4.800000e-04
+2026-03-03 10:01:33,492 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:33,492 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:33,493 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:34,061 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:34,063 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:34,300 INFO [__main__] step=25 t=[4.800000e-04 -> 5.000000e-04] dt=2.000e-05 Ts=445.596 Rd=9.992e-05 mpp=1.404e-01 Tg[min,max]=[468.052, 1500.000] nl_conv=True nl_iter=4 nl_res_inf=2.701e-08
+2026-03-03 10:01:34,330 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:34,330 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:34,331 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:34,878 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:34,879 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:35,046 INFO [__main__] step=26 t=[5.000000e-04 -> 5.200000e-04] dt=2.000e-05 Ts=446.484 Rd=9.991e-05 mpp=1.424e-01 Tg[min,max]=[468.830, 1500.000] nl_conv=True nl_iter=4 nl_res_inf=1.147e-08
+2026-03-03 10:01:35,074 INFO [__main__] Wrote u vector snapshot at step 26, t=5.200000e-04
+2026-03-03 10:01:35,074 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:35,074 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:35,075 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:35,596 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:35,597 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:35,758 INFO [__main__] step=27 t=[5.200000e-04 -> 5.400000e-04] dt=2.000e-05 Ts=447.345 Rd=9.991e-05 mpp=1.443e-01 Tg[min,max]=[469.586, 1500.000] nl_conv=True nl_iter=4 nl_res_inf=2.321e-08
+2026-03-03 10:01:35,787 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:35,787 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:35,788 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:36,331 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:36,332 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:36,512 INFO [__main__] step=28 t=[5.400000e-04 -> 5.600000e-04] dt=2.000e-05 Ts=448.181 Rd=9.990e-05 mpp=1.461e-01 Tg[min,max]=[470.320, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=2.837e-09
+2026-03-03 10:01:36,539 INFO [__main__] Wrote u vector snapshot at step 28, t=5.600000e-04
+2026-03-03 10:01:36,539 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:36,539 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:36,540 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:37,055 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:37,056 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:37,228 INFO [__main__] step=29 t=[5.600000e-04 -> 5.800000e-04] dt=2.000e-05 Ts=448.992 Rd=9.990e-05 mpp=1.479e-01 Tg[min,max]=[471.033, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=1.917e-09
+2026-03-03 10:01:37,255 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:37,255 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:37,256 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:37,774 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:37,775 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:37,969 INFO [__main__] step=30 t=[5.800000e-04 -> 6.000000e-04] dt=2.000e-05 Ts=449.781 Rd=9.989e-05 mpp=1.495e-01 Tg[min,max]=[471.727, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=1.835e-09
+2026-03-03 10:01:37,994 INFO [__main__] Wrote u vector snapshot at step 30, t=6.000000e-04
+2026-03-03 10:01:37,995 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:37,995 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:37,995 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:38,538 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:38,539 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:38,732 INFO [__main__] step=31 t=[6.000000e-04 -> 6.200000e-04] dt=2.000e-05 Ts=450.548 Rd=9.989e-05 mpp=1.511e-01 Tg[min,max]=[472.403, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=2.936e-09
+2026-03-03 10:01:38,758 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:38,758 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:38,759 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:39,307 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:39,308 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:39,477 INFO [__main__] step=32 t=[6.200000e-04 -> 6.400000e-04] dt=2.000e-05 Ts=451.294 Rd=9.988e-05 mpp=1.527e-01 Tg[min,max]=[473.062, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=4.975e-09
+2026-03-03 10:01:39,502 INFO [__main__] Wrote u vector snapshot at step 32, t=6.400000e-04
+2026-03-03 10:01:39,502 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:39,502 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:39,503 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:40,023 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:40,024 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:40,191 INFO [__main__] step=33 t=[6.400000e-04 -> 6.600000e-04] dt=2.000e-05 Ts=452.021 Rd=9.988e-05 mpp=1.542e-01 Tg[min,max]=[473.704, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=7.045e-09
+2026-03-03 10:01:40,204 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:40,204 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:40,224 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:40,742 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:40,743 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:40,950 INFO [__main__] step=34 t=[6.600000e-04 -> 6.800000e-04] dt=2.000e-05 Ts=452.730 Rd=9.987e-05 mpp=1.556e-01 Tg[min,max]=[474.330, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=9.132e-09
+2026-03-03 10:01:40,976 INFO [__main__] Wrote u vector snapshot at step 34, t=6.800000e-04
+2026-03-03 10:01:40,977 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:40,977 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:40,978 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:41,520 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:41,521 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:41,774 INFO [__main__] step=35 t=[6.800000e-04 -> 7.000000e-04] dt=2.000e-05 Ts=453.421 Rd=9.987e-05 mpp=1.569e-01 Tg[min,max]=[474.942, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=1.122e-08
+2026-03-03 10:01:41,799 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:41,799 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:41,800 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:42,367 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:42,369 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:42,700 INFO [__main__] step=36 t=[7.000000e-04 -> 7.200000e-04] dt=2.000e-05 Ts=454.096 Rd=9.986e-05 mpp=1.582e-01 Tg[min,max]=[475.540, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=1.328e-08
+2026-03-03 10:01:42,726 INFO [__main__] Wrote u vector snapshot at step 36, t=7.200000e-04
+2026-03-03 10:01:42,727 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:42,727 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:42,728 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:43,287 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:43,288 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:43,489 INFO [__main__] step=37 t=[7.200000e-04 -> 7.400000e-04] dt=2.000e-05 Ts=454.754 Rd=9.986e-05 mpp=1.595e-01 Tg[min,max]=[476.124, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=1.532e-08
+2026-03-03 10:01:43,515 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:43,516 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:43,516 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:44,067 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:44,068 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:44,220 INFO [__main__] step=38 t=[7.400000e-04 -> 7.600000e-04] dt=2.000e-05 Ts=455.397 Rd=9.985e-05 mpp=1.607e-01 Tg[min,max]=[476.695, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=1.732e-08
+2026-03-03 10:01:44,233 INFO [__main__] Wrote u vector snapshot at step 38, t=7.600000e-04
+2026-03-03 10:01:44,234 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:44,234 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:44,254 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:44,814 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:44,815 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:45,001 INFO [__main__] step=39 t=[7.600000e-04 -> 7.800000e-04] dt=2.000e-05 Ts=456.026 Rd=9.985e-05 mpp=1.619e-01 Tg[min,max]=[477.254, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=1.927e-08
+2026-03-03 10:01:45,028 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:45,028 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:45,029 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:45,574 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:45,576 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:45,742 INFO [__main__] step=40 t=[7.800000e-04 -> 8.000000e-04] dt=2.000e-05 Ts=456.641 Rd=9.984e-05 mpp=1.630e-01 Tg[min,max]=[477.802, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=2.117e-08
+2026-03-03 10:01:45,765 INFO [__main__] Wrote u vector snapshot at step 40, t=8.000000e-04
+2026-03-03 10:01:45,765 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:45,766 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:45,766 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:46,290 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:46,292 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:46,540 INFO [__main__] step=41 t=[8.000000e-04 -> 8.200000e-04] dt=2.000e-05 Ts=457.243 Rd=9.983e-05 mpp=1.641e-01 Tg[min,max]=[478.338, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=2.309e-08
+2026-03-03 10:01:46,572 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:46,572 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:46,572 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:47,110 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:47,111 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:47,325 INFO [__main__] step=42 t=[8.200000e-04 -> 8.400000e-04] dt=2.000e-05 Ts=457.832 Rd=9.983e-05 mpp=1.651e-01 Tg[min,max]=[478.863, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=2.488e-08
+2026-03-03 10:01:47,350 INFO [__main__] Wrote u vector snapshot at step 42, t=8.400000e-04
+2026-03-03 10:01:47,351 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:47,351 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:47,352 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:47,938 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:47,939 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:48,221 INFO [__main__] step=43 t=[8.400000e-04 -> 8.600000e-04] dt=2.000e-05 Ts=458.410 Rd=9.982e-05 mpp=1.661e-01 Tg[min,max]=[479.379, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=2.659e-08
+2026-03-03 10:01:48,251 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:48,251 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:48,252 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:49,097 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:49,098 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:49,339 INFO [__main__] step=44 t=[8.600000e-04 -> 8.800000e-04] dt=2.000e-05 Ts=458.975 Rd=9.982e-05 mpp=1.671e-01 Tg[min,max]=[479.885, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=2.825e-08
+2026-03-03 10:01:49,372 INFO [__main__] Wrote u vector snapshot at step 44, t=8.800000e-04
+2026-03-03 10:01:49,373 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:49,373 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:49,374 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:50,222 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:50,223 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:50,538 INFO [__main__] step=45 t=[8.800000e-04 -> 9.000000e-04] dt=2.000e-05 Ts=459.530 Rd=9.981e-05 mpp=1.680e-01 Tg[min,max]=[480.381, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=2.970e-08
+2026-03-03 10:01:50,566 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:50,566 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:50,567 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:51,125 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:51,126 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:51,348 INFO [__main__] step=46 t=[9.000000e-04 -> 9.200000e-04] dt=2.000e-05 Ts=460.073 Rd=9.981e-05 mpp=1.689e-01 Tg[min,max]=[480.868, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=3.107e-08
+2026-03-03 10:01:51,379 INFO [__main__] Wrote u vector snapshot at step 46, t=9.200000e-04
+2026-03-03 10:01:51,379 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:51,380 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:51,380 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:51,912 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:51,913 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:52,123 INFO [__main__] step=47 t=[9.200000e-04 -> 9.400000e-04] dt=2.000e-05 Ts=460.607 Rd=9.980e-05 mpp=1.698e-01 Tg[min,max]=[481.347, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=3.239e-08
+2026-03-03 10:01:52,142 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:52,142 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:52,143 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:52,666 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:52,667 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:52,881 INFO [__main__] step=48 t=[9.400000e-04 -> 9.600000e-04] dt=2.000e-05 Ts=461.131 Rd=9.980e-05 mpp=1.707e-01 Tg[min,max]=[481.817, 1500.000] nl_conv=True nl_iter=5 nl_res_inf=3.364e-08
+2026-03-03 10:01:52,908 INFO [__main__] Wrote u vector snapshot at step 48, t=9.600000e-04
+2026-03-03 10:01:52,908 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:52,908 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:52,909 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:53,471 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:53,472 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:53,771 INFO [__main__] step=49 t=[9.600000e-04 -> 9.800000e-04] dt=2.000e-05 Ts=461.645 Rd=9.979e-05 mpp=1.715e-01 Tg[min,max]=[482.280, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.625e-09
+2026-03-03 10:01:53,797 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:53,797 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:53,798 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:54,370 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:54,371 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:54,542 INFO [__main__] step=50 t=[9.800000e-04 -> 1.000000e-03] dt=2.000e-05 Ts=462.150 Rd=9.978e-05 mpp=1.723e-01 Tg[min,max]=[482.734, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.526e-09
+2026-03-03 10:01:54,558 INFO [__main__] Wrote u vector snapshot at step 50, t=1.000000e-03
+2026-03-03 10:01:54,558 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:54,559 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:54,570 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:55,087 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:55,088 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:55,322 INFO [__main__] step=51 t=[1.000000e-03 -> 1.020000e-03] dt=2.000e-05 Ts=462.647 Rd=9.978e-05 mpp=1.731e-01 Tg[min,max]=[483.182, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.425e-09
+2026-03-03 10:01:55,353 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:55,353 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:55,354 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:55,909 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:55,910 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:56,113 INFO [__main__] step=52 t=[1.020000e-03 -> 1.040000e-03] dt=2.000e-05 Ts=463.135 Rd=9.977e-05 mpp=1.738e-01 Tg[min,max]=[483.622, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.321e-09
+2026-03-03 10:01:56,141 INFO [__main__] Wrote u vector snapshot at step 52, t=1.040000e-03
+2026-03-03 10:01:56,141 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:56,141 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:56,142 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:56,692 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:56,693 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:56,896 INFO [__main__] step=53 t=[1.040000e-03 -> 1.060000e-03] dt=2.000e-05 Ts=463.615 Rd=9.977e-05 mpp=1.745e-01 Tg[min,max]=[484.056, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.220e-09
+2026-03-03 10:01:56,921 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:56,921 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:56,921 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:57,439 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:57,440 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:57,629 INFO [__main__] step=54 t=[1.060000e-03 -> 1.080000e-03] dt=2.000e-05 Ts=464.087 Rd=9.976e-05 mpp=1.753e-01 Tg[min,max]=[484.483, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.119e-09
+2026-03-03 10:01:57,657 INFO [__main__] Wrote u vector snapshot at step 54, t=1.080000e-03
+2026-03-03 10:01:57,658 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:57,658 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:57,658 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:58,256 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:58,257 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:58,446 INFO [__main__] step=55 t=[1.080000e-03 -> 1.100000e-03] dt=2.000e-05 Ts=464.551 Rd=9.975e-05 mpp=1.759e-01 Tg[min,max]=[484.903, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.019e-09
+2026-03-03 10:01:58,471 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:58,471 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:58,472 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:58,989 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:58,990 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:01:59,269 INFO [__main__] step=56 t=[1.100000e-03 -> 1.120000e-03] dt=2.000e-05 Ts=465.009 Rd=9.975e-05 mpp=1.766e-01 Tg[min,max]=[485.318, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=9.228e-10
+2026-03-03 10:01:59,297 INFO [__main__] Wrote u vector snapshot at step 56, t=1.120000e-03
+2026-03-03 10:01:59,297 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:01:59,297 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:01:59,298 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:01:59,858 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:01:59,859 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:00,144 INFO [__main__] step=57 t=[1.120000e-03 -> 1.140000e-03] dt=2.000e-05 Ts=465.459 Rd=9.974e-05 mpp=1.773e-01 Tg[min,max]=[485.726, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=8.260e-10
+2026-03-03 10:02:00,172 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:00,172 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:00,173 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:00,709 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:00,710 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:01,027 INFO [__main__] step=58 t=[1.140000e-03 -> 1.160000e-03] dt=2.000e-05 Ts=465.903 Rd=9.974e-05 mpp=1.779e-01 Tg[min,max]=[486.129, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=7.333e-10
+2026-03-03 10:02:01,054 INFO [__main__] Wrote u vector snapshot at step 58, t=1.160000e-03
+2026-03-03 10:02:01,055 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:01,055 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:01,056 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:01,741 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:01,742 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:01,928 INFO [__main__] step=59 t=[1.160000e-03 -> 1.180000e-03] dt=2.000e-05 Ts=466.340 Rd=9.973e-05 mpp=1.785e-01 Tg[min,max]=[486.526, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=6.593e-10
+2026-03-03 10:02:01,954 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:01,954 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:01,955 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:02,573 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:02,574 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:02,794 INFO [__main__] step=60 t=[1.180000e-03 -> 1.200000e-03] dt=2.000e-05 Ts=466.770 Rd=9.972e-05 mpp=1.791e-01 Tg[min,max]=[486.919, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=5.538e-10
+2026-03-03 10:02:02,826 INFO [__main__] Wrote u vector snapshot at step 60, t=1.200000e-03
+2026-03-03 10:02:02,826 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:02,826 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:02,827 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:03,400 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:03,401 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:03,644 INFO [__main__] step=61 t=[1.200000e-03 -> 1.220000e-03] dt=2.000e-05 Ts=467.195 Rd=9.972e-05 mpp=1.797e-01 Tg[min,max]=[487.305, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=5.303e-10
+2026-03-03 10:02:03,672 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:03,672 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:03,673 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:04,267 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:04,268 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:04,593 INFO [__main__] step=62 t=[1.220000e-03 -> 1.240000e-03] dt=2.000e-05 Ts=467.613 Rd=9.971e-05 mpp=1.803e-01 Tg[min,max]=[487.687, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=5.402e-10
+2026-03-03 10:02:04,621 INFO [__main__] Wrote u vector snapshot at step 62, t=1.240000e-03
+2026-03-03 10:02:04,622 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:04,622 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:04,623 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:05,287 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:05,288 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:05,462 INFO [__main__] step=63 t=[1.240000e-03 -> 1.260000e-03] dt=2.000e-05 Ts=468.026 Rd=9.971e-05 mpp=1.808e-01 Tg[min,max]=[488.064, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=5.499e-10
+2026-03-03 10:02:05,475 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:05,475 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:05,485 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:06,010 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:06,011 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:06,226 INFO [__main__] step=64 t=[1.260000e-03 -> 1.280000e-03] dt=2.000e-05 Ts=468.433 Rd=9.970e-05 mpp=1.813e-01 Tg[min,max]=[488.437, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=5.592e-10
+2026-03-03 10:02:06,246 INFO [__main__] Wrote u vector snapshot at step 64, t=1.280000e-03
+2026-03-03 10:02:06,247 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:06,247 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:06,248 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:06,779 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:06,780 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:07,001 INFO [__main__] step=65 t=[1.280000e-03 -> 1.300000e-03] dt=2.000e-05 Ts=468.835 Rd=9.969e-05 mpp=1.819e-01 Tg[min,max]=[488.805, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=5.683e-10
+2026-03-03 10:02:07,025 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:07,025 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:07,026 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:07,559 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:07,560 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:07,875 INFO [__main__] step=66 t=[1.300000e-03 -> 1.320000e-03] dt=2.000e-05 Ts=469.231 Rd=9.969e-05 mpp=1.824e-01 Tg[min,max]=[489.168, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=5.771e-10
+2026-03-03 10:02:07,904 INFO [__main__] Wrote u vector snapshot at step 66, t=1.320000e-03
+2026-03-03 10:02:07,904 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:07,904 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:07,905 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:08,433 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:08,434 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:08,650 INFO [__main__] step=67 t=[1.320000e-03 -> 1.340000e-03] dt=2.000e-05 Ts=469.623 Rd=9.968e-05 mpp=1.829e-01 Tg[min,max]=[489.527, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=5.857e-10
+2026-03-03 10:02:08,675 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:08,675 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:08,675 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:09,217 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:09,218 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:09,442 INFO [__main__] step=68 t=[1.340000e-03 -> 1.360000e-03] dt=2.000e-05 Ts=470.009 Rd=9.968e-05 mpp=1.834e-01 Tg[min,max]=[489.882, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=5.940e-10
+2026-03-03 10:02:09,470 INFO [__main__] Wrote u vector snapshot at step 68, t=1.360000e-03
+2026-03-03 10:02:09,471 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:09,471 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:09,471 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:10,015 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:10,016 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:10,225 INFO [__main__] step=69 t=[1.360000e-03 -> 1.380000e-03] dt=2.000e-05 Ts=470.391 Rd=9.967e-05 mpp=1.839e-01 Tg[min,max]=[490.233, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=6.021e-10
+2026-03-03 10:02:10,249 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:10,249 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:10,250 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:10,779 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:10,780 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:11,000 INFO [__main__] step=70 t=[1.380000e-03 -> 1.400000e-03] dt=2.000e-05 Ts=470.768 Rd=9.966e-05 mpp=1.843e-01 Tg[min,max]=[490.580, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=6.101e-10
+2026-03-03 10:02:11,027 INFO [__main__] Wrote u vector snapshot at step 70, t=1.400000e-03
+2026-03-03 10:02:11,028 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:11,028 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:11,029 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:11,555 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:11,556 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:11,774 INFO [__main__] step=71 t=[1.400000e-03 -> 1.420000e-03] dt=2.000e-05 Ts=471.141 Rd=9.966e-05 mpp=1.848e-01 Tg[min,max]=[490.924, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=6.180e-10
+2026-03-03 10:02:11,800 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:11,800 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:11,801 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:12,353 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:12,354 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:12,584 INFO [__main__] step=72 t=[1.420000e-03 -> 1.440000e-03] dt=2.000e-05 Ts=471.509 Rd=9.965e-05 mpp=1.852e-01 Tg[min,max]=[491.263, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=6.240e-10
+2026-03-03 10:02:12,611 INFO [__main__] Wrote u vector snapshot at step 72, t=1.440000e-03
+2026-03-03 10:02:12,612 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:12,612 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:12,612 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:13,182 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:13,184 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:13,432 INFO [__main__] step=73 t=[1.440000e-03 -> 1.460000e-03] dt=2.000e-05 Ts=471.873 Rd=9.964e-05 mpp=1.857e-01 Tg[min,max]=[491.599, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=6.310e-10
+2026-03-03 10:02:13,456 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:13,456 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:13,457 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:13,996 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:13,998 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:14,190 INFO [__main__] step=74 t=[1.460000e-03 -> 1.480000e-03] dt=2.000e-05 Ts=472.232 Rd=9.964e-05 mpp=1.861e-01 Tg[min,max]=[491.932, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=6.377e-10
+2026-03-03 10:02:14,217 INFO [__main__] Wrote u vector snapshot at step 74, t=1.480000e-03
+2026-03-03 10:02:14,217 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:14,217 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:14,218 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:14,789 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:14,790 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:14,945 INFO [__main__] step=75 t=[1.480000e-03 -> 1.500000e-03] dt=2.000e-05 Ts=472.588 Rd=9.963e-05 mpp=1.865e-01 Tg[min,max]=[492.261, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=6.455e-10
+2026-03-03 10:02:14,958 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:14,958 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:14,980 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:15,562 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:15,563 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:15,751 INFO [__main__] step=76 t=[1.500000e-03 -> 1.520000e-03] dt=2.000e-05 Ts=472.940 Rd=9.963e-05 mpp=1.869e-01 Tg[min,max]=[492.587, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=6.512e-10
+2026-03-03 10:02:15,765 INFO [__main__] Wrote u vector snapshot at step 76, t=1.520000e-03
+2026-03-03 10:02:15,765 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:15,765 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:15,766 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:16,305 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:16,306 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:16,506 INFO [__main__] step=77 t=[1.520000e-03 -> 1.540000e-03] dt=2.000e-05 Ts=473.288 Rd=9.962e-05 mpp=1.873e-01 Tg[min,max]=[492.910, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=6.578e-10
+2026-03-03 10:02:16,532 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:16,532 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:16,533 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:17,070 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:17,072 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:17,310 INFO [__main__] step=78 t=[1.540000e-03 -> 1.560000e-03] dt=2.000e-05 Ts=473.632 Rd=9.961e-05 mpp=1.877e-01 Tg[min,max]=[493.229, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=6.642e-10
+2026-03-03 10:02:17,335 INFO [__main__] Wrote u vector snapshot at step 78, t=1.560000e-03
+2026-03-03 10:02:17,336 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:17,336 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:17,337 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:17,966 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:17,967 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:18,260 INFO [__main__] step=79 t=[1.560000e-03 -> 1.580000e-03] dt=2.000e-05 Ts=473.972 Rd=9.961e-05 mpp=1.881e-01 Tg[min,max]=[493.546, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=6.705e-10
+2026-03-03 10:02:18,286 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:18,286 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:18,287 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:18,916 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:18,917 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:19,147 INFO [__main__] step=80 t=[1.580000e-03 -> 1.600000e-03] dt=2.000e-05 Ts=474.309 Rd=9.960e-05 mpp=1.885e-01 Tg[min,max]=[493.859, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=6.780e-10
+2026-03-03 10:02:19,171 INFO [__main__] Wrote u vector snapshot at step 80, t=1.600000e-03
+2026-03-03 10:02:19,172 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:19,172 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:19,173 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:19,752 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:19,753 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:19,940 INFO [__main__] step=81 t=[1.600000e-03 -> 1.620000e-03] dt=2.000e-05 Ts=474.643 Rd=9.959e-05 mpp=1.888e-01 Tg[min,max]=[494.170, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=6.829e-10
+2026-03-03 10:02:19,953 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:19,953 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:19,970 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:20,596 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:20,597 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:20,862 INFO [__main__] step=82 t=[1.620000e-03 -> 1.640000e-03] dt=2.000e-05 Ts=474.973 Rd=9.959e-05 mpp=1.892e-01 Tg[min,max]=[494.478, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=7.115e-10
+2026-03-03 10:02:20,880 INFO [__main__] Wrote u vector snapshot at step 82, t=1.640000e-03
+2026-03-03 10:02:20,881 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:20,881 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:20,882 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:21,468 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:21,469 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:21,696 INFO [__main__] step=83 t=[1.640000e-03 -> 1.660000e-03] dt=2.000e-05 Ts=475.300 Rd=9.958e-05 mpp=1.896e-01 Tg[min,max]=[494.783, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=7.411e-10
+2026-03-03 10:02:21,722 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:21,722 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:21,723 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:22,382 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:22,383 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:22,604 INFO [__main__] step=84 t=[1.660000e-03 -> 1.680000e-03] dt=2.000e-05 Ts=475.623 Rd=9.957e-05 mpp=1.899e-01 Tg[min,max]=[495.085, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=7.688e-10
+2026-03-03 10:02:22,632 INFO [__main__] Wrote u vector snapshot at step 84, t=1.680000e-03
+2026-03-03 10:02:22,632 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:22,632 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:22,633 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:23,270 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:23,272 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:23,552 INFO [__main__] step=85 t=[1.680000e-03 -> 1.700000e-03] dt=2.000e-05 Ts=475.944 Rd=9.957e-05 mpp=1.903e-01 Tg[min,max]=[495.385, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=7.951e-10
+2026-03-03 10:02:23,580 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:23,580 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:23,581 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:24,214 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:24,215 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:24,558 INFO [__main__] step=86 t=[1.700000e-03 -> 1.720000e-03] dt=2.000e-05 Ts=476.261 Rd=9.956e-05 mpp=1.906e-01 Tg[min,max]=[495.682, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=8.189e-10
+2026-03-03 10:02:24,581 INFO [__main__] Wrote u vector snapshot at step 86, t=1.720000e-03
+2026-03-03 10:02:24,582 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:24,582 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:24,583 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:25,447 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:25,449 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:25,734 INFO [__main__] step=87 t=[1.720000e-03 -> 1.740000e-03] dt=2.000e-05 Ts=476.576 Rd=9.955e-05 mpp=1.909e-01 Tg[min,max]=[495.977, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=8.417e-10
+2026-03-03 10:02:25,747 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:25,748 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:25,748 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:26,361 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:26,362 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:26,669 INFO [__main__] step=88 t=[1.740000e-03 -> 1.760000e-03] dt=2.000e-05 Ts=476.888 Rd=9.955e-05 mpp=1.913e-01 Tg[min,max]=[496.269, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=8.621e-10
+2026-03-03 10:02:26,697 INFO [__main__] Wrote u vector snapshot at step 88, t=1.760000e-03
+2026-03-03 10:02:26,698 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:26,698 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:26,698 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:27,345 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:27,347 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:27,573 INFO [__main__] step=89 t=[1.760000e-03 -> 1.780000e-03] dt=2.000e-05 Ts=477.196 Rd=9.954e-05 mpp=1.916e-01 Tg[min,max]=[496.559, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=8.812e-10
+2026-03-03 10:02:27,598 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:27,598 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:27,599 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:28,205 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:28,206 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:28,418 INFO [__main__] step=90 t=[1.780000e-03 -> 1.800000e-03] dt=2.000e-05 Ts=477.502 Rd=9.953e-05 mpp=1.919e-01 Tg[min,max]=[496.847, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=9.013e-10
+2026-03-03 10:02:28,446 INFO [__main__] Wrote u vector snapshot at step 90, t=1.800000e-03
+2026-03-03 10:02:28,446 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:28,447 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:28,447 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:29,105 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:29,106 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:29,360 INFO [__main__] step=91 t=[1.800000e-03 -> 1.820000e-03] dt=2.000e-05 Ts=477.805 Rd=9.953e-05 mpp=1.922e-01 Tg[min,max]=[497.132, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=9.092e-10
+2026-03-03 10:02:29,384 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:29,384 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:29,385 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:30,002 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:30,003 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:30,234 INFO [__main__] step=92 t=[1.820000e-03 -> 1.840000e-03] dt=2.000e-05 Ts=478.106 Rd=9.952e-05 mpp=1.925e-01 Tg[min,max]=[497.415, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=9.287e-10
+2026-03-03 10:02:30,263 INFO [__main__] Wrote u vector snapshot at step 92, t=1.840000e-03
+2026-03-03 10:02:30,263 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:30,263 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:30,264 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:30,882 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:30,883 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:31,133 INFO [__main__] step=93 t=[1.840000e-03 -> 1.860000e-03] dt=2.000e-05 Ts=478.404 Rd=9.951e-05 mpp=1.928e-01 Tg[min,max]=[497.696, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=9.429e-10
+2026-03-03 10:02:31,147 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:31,147 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:31,153 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:31,814 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:31,815 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:32,059 INFO [__main__] step=94 t=[1.860000e-03 -> 1.880000e-03] dt=2.000e-05 Ts=478.699 Rd=9.951e-05 mpp=1.931e-01 Tg[min,max]=[497.975, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=9.552e-10
+2026-03-03 10:02:32,084 INFO [__main__] Wrote u vector snapshot at step 94, t=1.880000e-03
+2026-03-03 10:02:32,085 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:32,085 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:32,086 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:32,706 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:32,707 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:32,950 INFO [__main__] step=95 t=[1.880000e-03 -> 1.900000e-03] dt=2.000e-05 Ts=478.992 Rd=9.950e-05 mpp=1.934e-01 Tg[min,max]=[498.252, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=9.702e-10
+2026-03-03 10:02:32,976 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:32,976 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:32,977 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:33,670 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:33,671 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:33,908 INFO [__main__] step=96 t=[1.900000e-03 -> 1.920000e-03] dt=2.000e-05 Ts=479.283 Rd=9.949e-05 mpp=1.937e-01 Tg[min,max]=[498.526, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=9.802e-10
+2026-03-03 10:02:33,933 INFO [__main__] Wrote u vector snapshot at step 96, t=1.920000e-03
+2026-03-03 10:02:33,934 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:33,934 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:33,935 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:34,568 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:34,569 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:34,825 INFO [__main__] step=97 t=[1.920000e-03 -> 1.940000e-03] dt=2.000e-05 Ts=479.571 Rd=9.949e-05 mpp=1.939e-01 Tg[min,max]=[498.799, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=9.848e-10
+2026-03-03 10:02:34,851 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:34,851 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:34,852 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:35,551 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:35,552 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:35,750 INFO [__main__] step=98 t=[1.940000e-03 -> 1.960000e-03] dt=2.000e-05 Ts=479.857 Rd=9.948e-05 mpp=1.942e-01 Tg[min,max]=[499.069, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=9.922e-10
+2026-03-03 10:02:35,765 INFO [__main__] Wrote u vector snapshot at step 98, t=1.960000e-03
+2026-03-03 10:02:35,766 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:35,766 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:35,785 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:36,440 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:36,441 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:36,738 INFO [__main__] step=99 t=[1.960000e-03 -> 1.980000e-03] dt=2.000e-05 Ts=480.140 Rd=9.947e-05 mpp=1.945e-01 Tg[min,max]=[499.338, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.003e-09
+2026-03-03 10:02:36,772 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:36,772 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:36,773 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:37,463 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:37,465 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:37,749 INFO [__main__] step=100 t=[1.980000e-03 -> 2.000000e-03] dt=2.000e-05 Ts=480.422 Rd=9.947e-05 mpp=1.947e-01 Tg[min,max]=[499.605, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.004e-09
+2026-03-03 10:02:37,774 INFO [__main__] Wrote u vector snapshot at step 100, t=2.000000e-03
+2026-03-03 10:02:37,775 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:37,775 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:37,776 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:38,448 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:38,449 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:38,768 INFO [__main__] step=101 t=[2.000000e-03 -> 2.020000e-03] dt=2.000e-05 Ts=480.701 Rd=9.946e-05 mpp=1.950e-01 Tg[min,max]=[499.870, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.012e-09
+2026-03-03 10:02:38,794 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:38,794 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:38,795 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:39,474 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:39,475 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:39,829 INFO [__main__] step=102 t=[2.020000e-03 -> 2.040000e-03] dt=2.000e-05 Ts=480.978 Rd=9.945e-05 mpp=1.953e-01 Tg[min,max]=[500.133, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.018e-09
+2026-03-03 10:02:39,860 INFO [__main__] Wrote u vector snapshot at step 102, t=2.040000e-03
+2026-03-03 10:02:39,860 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:39,860 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:39,861 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:40,528 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:40,529 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:40,732 INFO [__main__] step=103 t=[2.040000e-03 -> 2.060000e-03] dt=2.000e-05 Ts=481.252 Rd=9.945e-05 mpp=1.955e-01 Tg[min,max]=[500.395, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.021e-09
+2026-03-03 10:02:40,747 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:40,747 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:40,784 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:41,490 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:41,491 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:41,779 INFO [__main__] step=104 t=[2.060000e-03 -> 2.080000e-03] dt=2.000e-05 Ts=481.525 Rd=9.944e-05 mpp=1.958e-01 Tg[min,max]=[500.655, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.017e-09
+2026-03-03 10:02:41,815 INFO [__main__] Wrote u vector snapshot at step 104, t=2.080000e-03
+2026-03-03 10:02:41,816 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:41,817 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:41,818 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:42,525 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:42,527 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:42,854 INFO [__main__] step=105 t=[2.080000e-03 -> 2.100000e-03] dt=2.000e-05 Ts=481.796 Rd=9.943e-05 mpp=1.960e-01 Tg[min,max]=[500.913, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.017e-09
+2026-03-03 10:02:42,880 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:42,880 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:42,881 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:43,553 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:43,554 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:43,788 INFO [__main__] step=106 t=[2.100000e-03 -> 2.120000e-03] dt=2.000e-05 Ts=482.065 Rd=9.943e-05 mpp=1.963e-01 Tg[min,max]=[501.169, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.021e-09
+2026-03-03 10:02:43,815 INFO [__main__] Wrote u vector snapshot at step 106, t=2.120000e-03
+2026-03-03 10:02:43,816 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:43,816 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:43,817 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:44,535 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:44,536 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:44,861 INFO [__main__] step=107 t=[2.120000e-03 -> 2.140000e-03] dt=2.000e-05 Ts=482.331 Rd=9.942e-05 mpp=1.965e-01 Tg[min,max]=[501.424, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.014e-09
+2026-03-03 10:02:44,887 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:44,887 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:44,888 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:45,630 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:45,631 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:45,858 INFO [__main__] step=108 t=[2.140000e-03 -> 2.160000e-03] dt=2.000e-05 Ts=482.596 Rd=9.941e-05 mpp=1.967e-01 Tg[min,max]=[501.677, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.011e-09
+2026-03-03 10:02:45,873 INFO [__main__] Wrote u vector snapshot at step 108, t=2.160000e-03
+2026-03-03 10:02:45,874 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:45,874 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:45,886 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:46,569 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:46,570 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:46,771 INFO [__main__] step=109 t=[2.160000e-03 -> 2.180000e-03] dt=2.000e-05 Ts=482.859 Rd=9.941e-05 mpp=1.970e-01 Tg[min,max]=[501.929, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.005e-09
+2026-03-03 10:02:46,786 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:46,786 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:46,824 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:47,553 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:47,554 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:47,816 INFO [__main__] step=110 t=[2.180000e-03 -> 2.200000e-03] dt=2.000e-05 Ts=483.121 Rd=9.940e-05 mpp=1.972e-01 Tg[min,max]=[502.179, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.005e-09
+2026-03-03 10:02:47,842 INFO [__main__] Wrote u vector snapshot at step 110, t=2.200000e-03
+2026-03-03 10:02:47,843 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:47,843 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:47,844 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:48,568 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:48,569 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:48,828 INFO [__main__] step=111 t=[2.200000e-03 -> 2.220000e-03] dt=2.000e-05 Ts=483.380 Rd=9.939e-05 mpp=1.974e-01 Tg[min,max]=[502.427, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=9.951e-10
+2026-03-03 10:02:48,856 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:48,856 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:48,856 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:49,543 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:49,545 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:49,794 INFO [__main__] step=112 t=[2.220000e-03 -> 2.240000e-03] dt=2.000e-05 Ts=483.637 Rd=9.939e-05 mpp=1.976e-01 Tg[min,max]=[502.674, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=9.888e-10
+2026-03-03 10:02:49,819 INFO [__main__] Wrote u vector snapshot at step 112, t=2.240000e-03
+2026-03-03 10:02:49,820 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:49,820 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:49,821 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:50,557 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:50,559 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:50,777 INFO [__main__] step=113 t=[2.240000e-03 -> 2.260000e-03] dt=2.000e-05 Ts=483.893 Rd=9.938e-05 mpp=1.979e-01 Tg[min,max]=[502.920, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=9.869e-10
+2026-03-03 10:02:50,818 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:50,819 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:50,819 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:51,585 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:51,586 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:51,864 INFO [__main__] step=114 t=[2.260000e-03 -> 2.280000e-03] dt=2.000e-05 Ts=484.147 Rd=9.937e-05 mpp=1.981e-01 Tg[min,max]=[503.164, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=9.747e-10
+2026-03-03 10:02:51,890 INFO [__main__] Wrote u vector snapshot at step 114, t=2.280000e-03
+2026-03-03 10:02:51,890 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:51,891 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:51,891 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:52,793 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:52,794 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:53,064 INFO [__main__] step=115 t=[2.280000e-03 -> 2.300000e-03] dt=2.000e-05 Ts=484.400 Rd=9.937e-05 mpp=1.983e-01 Tg[min,max]=[503.407, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=9.690e-10
+2026-03-03 10:02:53,080 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:53,080 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:53,108 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:53,887 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:53,888 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:54,159 INFO [__main__] step=116 t=[2.300000e-03 -> 2.320000e-03] dt=2.000e-05 Ts=484.651 Rd=9.936e-05 mpp=1.985e-01 Tg[min,max]=[503.648, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=9.595e-10
+2026-03-03 10:02:54,186 INFO [__main__] Wrote u vector snapshot at step 116, t=2.320000e-03
+2026-03-03 10:02:54,187 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:54,187 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:54,187 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:54,974 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:54,975 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:55,209 INFO [__main__] step=117 t=[2.320000e-03 -> 2.340000e-03] dt=2.000e-05 Ts=484.900 Rd=9.935e-05 mpp=1.987e-01 Tg[min,max]=[503.888, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=9.637e-10
+2026-03-03 10:02:55,234 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:55,234 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:55,236 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:55,981 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:55,982 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:56,270 INFO [__main__] step=118 t=[2.340000e-03 -> 2.360000e-03] dt=2.000e-05 Ts=485.147 Rd=9.935e-05 mpp=1.989e-01 Tg[min,max]=[504.127, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=9.830e-10
+2026-03-03 10:02:56,295 INFO [__main__] Wrote u vector snapshot at step 118, t=2.360000e-03
+2026-03-03 10:02:56,296 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:56,296 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:56,297 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:57,031 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:57,032 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:57,275 INFO [__main__] step=119 t=[2.360000e-03 -> 2.380000e-03] dt=2.000e-05 Ts=485.393 Rd=9.934e-05 mpp=1.991e-01 Tg[min,max]=[504.364, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.005e-09
+2026-03-03 10:02:57,303 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:57,303 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:57,303 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:58,081 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:58,083 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:58,451 INFO [__main__] step=120 t=[2.380000e-03 -> 2.400000e-03] dt=2.000e-05 Ts=485.638 Rd=9.933e-05 mpp=1.993e-01 Tg[min,max]=[504.600, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.030e-09
+2026-03-03 10:02:58,478 INFO [__main__] Wrote u vector snapshot at step 120, t=2.400000e-03
+2026-03-03 10:02:58,478 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:58,478 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:58,479 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:02:59,412 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:02:59,414 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:02:59,791 INFO [__main__] step=121 t=[2.400000e-03 -> 2.420000e-03] dt=2.000e-05 Ts=485.881 Rd=9.933e-05 mpp=1.995e-01 Tg[min,max]=[504.835, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.056e-09
+2026-03-03 10:02:59,819 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:02:59,819 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:02:59,821 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:03:00,737 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:03:00,738 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:03:01,032 INFO [__main__] step=122 t=[2.420000e-03 -> 2.440000e-03] dt=2.000e-05 Ts=486.122 Rd=9.932e-05 mpp=1.997e-01 Tg[min,max]=[505.068, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.088e-09
+2026-03-03 10:03:01,060 INFO [__main__] Wrote u vector snapshot at step 122, t=2.440000e-03
+2026-03-03 10:03:01,061 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:03:01,061 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:03:01,061 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:03:01,814 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:03:01,815 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:03:02,169 INFO [__main__] step=123 t=[2.440000e-03 -> 2.460000e-03] dt=2.000e-05 Ts=486.362 Rd=9.931e-05 mpp=1.999e-01 Tg[min,max]=[505.300, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.125e-09
+2026-03-03 10:03:02,198 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:03:02,199 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:03:02,200 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:03:03,017 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:03:03,018 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:03:03,351 INFO [__main__] step=124 t=[2.460000e-03 -> 2.480000e-03] dt=2.000e-05 Ts=486.601 Rd=9.930e-05 mpp=2.001e-01 Tg[min,max]=[505.531, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.166e-09
+2026-03-03 10:03:03,379 INFO [__main__] Wrote u vector snapshot at step 124, t=2.480000e-03
+2026-03-03 10:03:03,380 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:03:03,380 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:03:03,381 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:03:04,189 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:03:04,190 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:03:04,531 INFO [__main__] step=125 t=[2.480000e-03 -> 2.500000e-03] dt=2.000e-05 Ts=486.838 Rd=9.930e-05 mpp=2.003e-01 Tg[min,max]=[505.761, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.215e-09
+2026-03-03 10:03:04,558 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:03:04,558 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:03:04,559 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:03:05,358 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:03:05,359 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:03:05,614 INFO [__main__] step=126 t=[2.500000e-03 -> 2.520000e-03] dt=2.000e-05 Ts=487.074 Rd=9.929e-05 mpp=2.005e-01 Tg[min,max]=[505.989, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.274e-09
+2026-03-03 10:03:05,640 INFO [__main__] Wrote u vector snapshot at step 126, t=2.520000e-03
+2026-03-03 10:03:05,641 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:03:05,641 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:03:05,642 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:03:06,445 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:03:06,446 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:03:06,755 INFO [__main__] step=127 t=[2.520000e-03 -> 2.540000e-03] dt=2.000e-05 Ts=487.308 Rd=9.928e-05 mpp=2.007e-01 Tg[min,max]=[506.217, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.346e-09
+2026-03-03 10:03:06,772 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:03:06,772 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:03:06,797 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:03:07,587 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:03:07,588 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:03:07,880 INFO [__main__] step=128 t=[2.540000e-03 -> 2.560000e-03] dt=2.000e-05 Ts=487.541 Rd=9.928e-05 mpp=2.009e-01 Tg[min,max]=[506.443, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.435e-09
+2026-03-03 10:03:07,906 INFO [__main__] Wrote u vector snapshot at step 128, t=2.560000e-03
+2026-03-03 10:03:07,906 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:03:07,906 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:03:07,907 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:03:08,728 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:03:08,729 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:03:09,046 INFO [__main__] step=129 t=[2.560000e-03 -> 2.580000e-03] dt=2.000e-05 Ts=487.772 Rd=9.927e-05 mpp=2.011e-01 Tg[min,max]=[506.667, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.547e-09
+2026-03-03 10:03:09,071 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:03:09,072 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:03:09,072 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:03:09,899 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:03:09,900 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:03:10,285 INFO [__main__] step=130 t=[2.580000e-03 -> 2.600000e-03] dt=2.000e-05 Ts=488.002 Rd=9.926e-05 mpp=2.013e-01 Tg[min,max]=[506.891, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.692e-09
+2026-03-03 10:03:10,319 INFO [__main__] Wrote u vector snapshot at step 130, t=2.600000e-03
+2026-03-03 10:03:10,320 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:03:10,320 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:03:10,321 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:03:11,245 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:03:11,246 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:03:11,520 INFO [__main__] step=131 t=[2.600000e-03 -> 2.620000e-03] dt=2.000e-05 Ts=488.231 Rd=9.926e-05 mpp=2.015e-01 Tg[min,max]=[507.113, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=1.886e-09
+2026-03-03 10:03:11,545 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:03:11,545 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:03:11,546 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:03:12,390 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:03:12,391 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:03:12,760 INFO [__main__] step=132 t=[2.620000e-03 -> 2.640000e-03] dt=2.000e-05 Ts=488.458 Rd=9.925e-05 mpp=2.017e-01 Tg[min,max]=[507.334, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=2.163e-09
+2026-03-03 10:03:12,787 INFO [__main__] Wrote u vector snapshot at step 132, t=2.640000e-03
+2026-03-03 10:03:12,787 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:03:12,787 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:03:12,788 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:03:13,598 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:03:13,599 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:03:13,969 INFO [__main__] step=133 t=[2.640000e-03 -> 2.660000e-03] dt=2.000e-05 Ts=488.684 Rd=9.924e-05 mpp=2.019e-01 Tg[min,max]=[507.553, 1500.000] nl_conv=True nl_iter=6 nl_res_inf=2.579e-09
+2026-03-03 10:03:14,006 INFO [solvers.petsc_snes_parallel] PETSc parallel SNES (COMM_WORLD) starting: size=16 (no serial fallback in this module).
+2026-03-03 10:03:14,007 INFO [solvers.petsc_snes_parallel] Parallel SNES auto-building DM/layout_dist for COMM_WORLD.
+2026-03-03 10:03:14,008 INFO [solvers.petsc_snes_parallel] Parallel SNES fixed config: snes=vinewtonrsls/bt, ksp=gmres
+2026-03-03 10:03:14,882 INFO [assembly.build_sparse_fd_jacobian] MFPC_FD_FAIL_GLOBAL: any_rank=False n_ranks=0
+2026-03-03 10:03:14,883 INFO [solvers.petsc_snes_parallel] SNES func guard enabled: sanitize_mode=penalty penalty_value=1.000e+20
+2026-03-03 10:03:15,055 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 2: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,055 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 3: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,055 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 4: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,055 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 5: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,055 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 6: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,055 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 7: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,056 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 8: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,056 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 9: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,056 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 10: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,056 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 11: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,056 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 12: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,056 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 13: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,056 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 14: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,057 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 15: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,057 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 16: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,057 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 17: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,057 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 18: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,057 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 19: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,057 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 20: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,058 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 21: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,058 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 22: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,058 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 23: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,058 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 24: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,058 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 25: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,058 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 26: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,058 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 27: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,059 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 28: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,059 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 29: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,059 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 30: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,059 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 31: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,059 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 32: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,059 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 33: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,059 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 34: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,060 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 35: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,060 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 36: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,060 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 37: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,060 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 38: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,063 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 88: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,063 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 92: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,063 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 95: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,063 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 96: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,064 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 97: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,064 WARNING [properties.gas] Gas diffusion coeffs below floor at cell 98: min(D)=0.000e+00, bad_species=['N2'], total_bad=1 — flooring to 1.000e-09
+2026-03-03 10:03:15,074 WARNING [solvers.petsc_snes_parallel] SNES not converged: reason=-6 res_inf=9.656e+05
+2026-03-03 10:03:15,074 ERROR [solvers.petsc_snes_parallel] GLOBAL_DOMAIN_EVENT: rank=15 stage=global_max_x reason=global_max_x phase=SNES_F_iter0 t=0.0026600000000000057 dt=2e-05 Ts=5.139356083606429e-05 x_min=0.0 x_max=666.8411774309463 f_min=-0.6412723363023929 f_max=0.0003511798973336866 penalty_count=0 post_x_nonfinite=False post_x_n_bad=0 post_x_min=-3.6419421675592984e-06 post_x_max=17.447140935956035 post_x_inf=17.447140935956035 post_f_nonfinite=False post_f_n_bad=0 post_f_min=-0.0007088161767925612 post_f_max=0.00035118340916806545 post_f_inf=0.0007088161767925612 ls_stage= ls_reason= ls_lambda= g_x_inf=1500.0000000000011 g_x_rank=15 g_x_nonfinite=False g_f_inf=0.6412723363023929 g_f_rank=0 g_f_nonfinite=False
+2026-03-03 10:03:15,269 INFO [__main__] step=134 t=[2.660000e-03 -> 2.680000e-03] dt=2.000e-05 Ts=nan Rd=nan mpp=nan Tg[min,max]=[nan, nan] nl_conv=False nl_iter=0 nl_res_inf=9.656e+05
+2026-03-03 10:03:15,269 ERROR [__main__] Step 134 failed: SNES diverged (reason=global_max_x)
+2026-03-03 10:03:15,269 ERROR [__main__] Diagnostics extra: {'diag_sys': {}, 'message': 'SNES diverged (reason=global_max_x)', 'interface_diag': {'t': 0.0026800000000000057, 'dt': 2e-05, 'Ts': nan, 'Rd': nan, 'mpp': nan, 'm_dot': nan, 'psat': nan, 'sum_y_cond': nan, 'eq_source': 'step_failed', 'eq_exc_type': '', 'eq_exc_msg': 'SNES diverged (reason=global_max_x)', 'psat_source': '', 'hvap_source': '', 'latent_source': '', 'L_v': nan, 'fallback_reason': '', 'finite_ok': 'False', 'Ts_eff': nan, 'Tbub': nan, 'guard_active': '', 'clamp_active': '', 'eps_bg': '', 'penalty_used': 'False', 'penalty_reason': '', 'n_penalty_residual': 0, 'n_lambda_cap_ts': 0, 'max_Ts_trial_minus_upper': nan, 'ls_lambda': '', 'ls_clip_ts': 0, 'ls_clip_mpp': 0, 'ls_shrink_count': 0}, 'nonlinear': {'history_res_inf': [0.00822978991442369], 'message': 'SNES diverged (reason=global_max_x)', 'extra': {'snes_reason': 'global_max_x', 'snes_reason_str': 'global_max_x', 'snes_type': 'vinewtonrsls', 'linesearch_type': 'bt', 'ksp_type': 'gmres', 'pc_type': 'fieldsplit', 'ksp_reason': 2, 'ksp_reason_str': '2', 'ksp_it': 23, 'snes_iter': 0, 'jacobian_mode': 'mfpc_sparse_fd', 'n_func_eval': 7, 'n_jac_eval': 1, 'ksp_its_total': 23, 'time_func': 0.16327766235917807, 'time_jac': 0.8119200891815126, 'time_linear_total': 0.14376203110441566, 'time_total': 1.0665442650206387, 'snes_mf_enabled': True, 'pc_type_overridden': False, 'J_mat_type': 'mffd', 'P_mat_type': 'mpiaij', 'n_penalty_residual': 0, 'penalty_last_reason': '', 'penalty_last_stage': '', 'penalty_last_phase': '', 'n_lambda_cap_ts': 0, 'max_Ts_trial_minus_upper': nan, 'vi_bounds_enabled': True, 'ls_clip_ts': 0, 'ls_clip_mpp': 0, 'ls_shrink_count': 0, 'ls_lambda_last': '', 'petsc_options_prefix': 'p3acc_single_', 'snes_options_prefix': 'p3acc_single_', 'ksp_options_prefix': 'p3acc_single_', 'snes_smoke': {'smoke_enabled': False, 'max_outer_iter_original': 20, 'max_outer_iter_effective': 20, 'jacobian_mode_original': 'mfpc_sparse_fd', 'jacobian_mode_effective': 'mfpc_sparse_fd'}, 'KSP_A_type': 'mpiaij', 'KSP_P_type': 'mpiaij', 'ksp_operators': {'A_type': 'mpiaij', 'P_type': 'mpiaij'}, 'KSP_A_is_P': True, 'pmat_info': {'nz_used': 2489.0, 'nz_allocated': 2489.0}, 'mfpc_sparse_fd': {'ncolors': 0, 'n_fd_calls': 39, 'nnz_total_local': 205, 'n_local_rows': 33, 'shape': (423, 423), 'eps': 1e-08, 'drop_tol': 0.0, 'pattern_nnz_local': 205, 'prealloc_nnz_local': 205, 'cols_to_perturb': [0, 1, 2, 3, 4, 5, 6, 7, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 400, 401, 402, 419, 420, 421, 422], 'ownership_range': (0, 33), 'mpi_size': 16, 'max_diag_abs_local': 50000.00000004209, 'pattern_local': LocalJacPattern(rows_global=array([ 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16,
+       17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32],
+      dtype=int32), indptr=array([  0,   2,   5,  13,  21,  29,  37,  43,  49,  55,  61,  67,  73,
+        79,  85,  91,  97, 103, 109, 115, 121, 127, 133, 139, 145, 151,
+       157, 163, 169, 175, 181, 189, 197, 205]), indices=array([  0,   1,   0,   1,  33,   2,   6,   3,   4,   5,  30,  31,  32,
+         2,   3,   4,   5,   7,  30,  31,  32,   2,   3,   4,   5,   8,
+        30,  31,  32,   2,   3,   4,   5,   9,  30,  31,  32,   2,   6,
+        10,   7,   8,   9,   6,   3,   7,   8,   9,  11,   6,   4,   7,
+         8,   9,  12,   6,   5,   7,   8,   9,  13,   6,  10,  14,  11,
+        12,  13,  10,   7,  11,  12,  13,  15,  10,   8,  11,  12,  13,
+        16,  10,   9,  11,  12,  13,  17,  10,  14,  18,  15,  16,  17,
+        14,  11,  15,  16,  17,  19,  14,  12,  15,  16,  17,  20,  14,
+        13,  15,  16,  17,  21,  14,  18,  22,  19,  20,  21,  18,  15,
+        19,  20,  21,  23,  18,  16,  19,  20,  21,  24,  18,  17,  19,
+        20,  21,  25,  18,  22,  26,  23,  24,  25,  22,  19,  23,  24,
+        25,  27,  22,  20,  23,  24,  25,  28,  22,  21,  23,  24,  25,
+        29,  22,  26,  35,  27,  28,  29,  26,  23,  27,  28,  29,  36,
+        26,  24,  27,  28,  29,  37,  26,  25,  27,  28,  29,  38,   2,
+         3,   4,   5, 398,  30,  31,  32,   2,   3,   4,   5, 398,  30,
+        31,  32,   2,   3,   4,   5, 398,  30,  31,  32], dtype=int32), shape=(423, 423), meta={'nnz_total': 205.0, 'nnz_avg': 6.212121212121212, 'nnz_max_row': 8.0, 'n_local_rows': 33.0}), 'fd_jacobian_stats': {'n_cols': 39, 'col_norm_min': 1.0080755341565883e-06, 'col_norm_max': 50000.00000004209, 'n_suspicious_cols': 0, 'suspicious_cols': [], 'min_col_norm': 0.0, 'diag_damping': 1.0}}, 'fd_jacobian_stats': {'n_cols': 39, 'col_norm_min': 1.0080755341565883e-06, 'col_norm_max': 50000.00000004209, 'n_suspicious_cols': 0, 'suspicious_cols': [], 'min_col_norm': 0.0, 'diag_damping': 1.0}, 'parallel_backend': 'petsc_snes_parallel', 'comm_kind': 'world', 'comm_size': 16, 'X_vec_type': 'mpi', 'F_vec_type': 'mpi', 'X_local_size': 33, 'X_ownership_range': (0, 33), 'dm_type': 'composite', 'pc_structured': {'enabled': True, 'global': {'pc_type': 'fieldsplit'}, 'ksp_prefix': 'p3acc_single_', 'options_prefix': 'p3acc_single_', 'ownership_range_source': 'arg_P', 'ownership_range': (0, 33), 'splits': {'bulk': 420, 'iface': 3}, 'split_names': ['bulk', 'iface'], 'split_sizes_local': {'bulk': 33, 'iface': 0}, 'fieldsplit': {'type': 'schur', 'plan': 'bulk_iface', 'splits': {'bulk': {'ksp_type': 'preonly', 'pc_type': 'asm', 'asm_overlap': 1, 'subdomain_ksp_type': 'preonly', 'subdomain_pc_type': 'ilu', 'asm_subdomains': 1}, 'iface': {'ksp_type': 'preonly', 'pc_type': 'asm', 'asm_overlap': 1, 'subdomain_ksp_type': 'preonly', 'subdomain_pc_type': 'lu', 'asm_subdomains': 1}}, 'subksp_error': 'getFieldSplitSubKSP failed: Error: error code 73\n[ 0] PCFieldSplitGetSubKSP() at /home/conda/feedstock_root/build_artifacts/petsc_1736236456220/work/src/ksp/pc/impls/fieldsplit/fieldsplit.c:2539\n[ 0] PCFieldSplitGetSubKSP_FieldSplit_Schur() at /home/conda/feedstock_root/build_artifacts/petsc_1736236456220/work/src/ksp/pc/impls/fieldsplit/fieldsplit.c:2030\n[ 0] Object is in wrong state\n[ 0] Must call KSPSetUp() or PCSetUp() before calling PCFieldSplitGetSubKSP(); retry failed: Error: error code 73\n[ 0] PCFieldSplitGetSubKSP() at /home/conda/feedstock_root/build_artifacts/petsc_1736236456220/work/src/ksp/pc/impls/fieldsplit/fieldsplit.c:2539\n[ 0] PCFieldSplitGetSubKSP_FieldSplit_Schur() at /home/conda/feedstock_root/build_artifacts/petsc_1736236456220/work/src/ksp/pc/impls/fieldsplit/fieldsplit.c:2030\n[ 0] Object is in wrong state\n[ 0] Must call KSPSetUp() or PCSetUp() before calling PCFieldSplitGetSubKSP()'}, 'fieldsplit_type': 'schur', 'outer_ops': {'A_type': 'None', 'P_type': 'mpiaij', 'A_from_ksp': True, 'P_from_ksp': True, 'should_disable_amat': True}, 'disable_amat_attempt': {'setUseAmat': 'ok', 'opt_pc_use_amat': '0', 'setFromOptions': 'ok', 'uses_amat_after': False}, 'uses_amat': False, 'schur_fact_type': 'lower', 'options_injected': {'fieldsplit_bulk_ksp_type': 'preonly', 'fieldsplit_bulk_pc_type': 'asm', 'fieldsplit_bulk_pc_asm_overlap': '1', 'fieldsplit_bulk_sub_ksp_type': 'preonly', 'fieldsplit_bulk_sub_pc_type': 'ilu', 'fieldsplit_iface_ksp_type': 'preonly', 'fieldsplit_iface_pc_type': 'asm', 'fieldsplit_iface_pc_asm_overlap': '1', 'fieldsplit_iface_sub_ksp_type': 'preonly', 'fieldsplit_iface_sub_pc_type': 'lu'}, 'options_skipped_cli': {}, 'options_overwritten': {'fieldsplit_bulk_ksp_type': True, 'fieldsplit_bulk_pc_type': True, 'fieldsplit_bulk_pc_asm_overlap': True, 'fieldsplit_bulk_sub_ksp_type': True, 'fieldsplit_bulk_sub_pc_type': True, 'fieldsplit_iface_ksp_type': True, 'fieldsplit_iface_pc_type': True, 'fieldsplit_iface_pc_asm_overlap': True, 'fieldsplit_iface_sub_ksp_type': True, 'fieldsplit_iface_sub_pc_type': True}, 'sub_defaults': {'default': {'ksp_type': 'preonly', 'pc_type': 'asm', 'pc_asm_overlap': 1, 'subdomain_ksp_type': 'preonly', 'subdomain_pc_type': 'ilu'}, 'by_name': {'bulk': {'ksp_type': 'preonly', 'pc_type': 'asm', 'pc_asm_overlap': 1, 'subdomain_ksp_type': 'preonly', 'subdomain_pc_type': 'ilu'}, 'iface': {'ksp_type': 'preonly', 'pc_type': 'asm', 'pc_asm_overlap': 1, 'subdomain_ksp_type': 'preonly', 'subdomain_pc_type': 'lu'}}}}, 'history_res_inf': [0.00822978991442369]}}}
