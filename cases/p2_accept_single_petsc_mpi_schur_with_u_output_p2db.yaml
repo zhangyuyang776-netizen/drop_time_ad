@@ -160,7 +160,7 @@ solver:
 
 petsc:
   options_prefix: "p3acc_single_"
-  snes_type: "newtonls"
+  snes_type: "vinewtonrsls"
   linesearch_type: "l2"
   jacobian_mode: "mfpc_sparse_fd"
   fd_eps: 1.0e-8
