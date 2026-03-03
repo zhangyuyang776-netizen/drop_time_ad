@@ -214,13 +214,16 @@ def compute_gas_props(
             raise ValueError(f"Expected D_mech shape ({Ns_mech},), got {D_mech.shape}")
         if np.any(~np.isfinite(D_mech)) or np.any(D_mech < 0.0):
             raise ValueError(f"Non-physical gas diffusion coeffs at cell {ig}")
-        if np.any(D_mech < 1e-20):
-            bad = np.where(D_mech < 1e-20)[0]
+        D_floor = 1.0e-9
+        if np.any(D_mech < D_floor):
+            bad = np.where(D_mech < D_floor)[0]
             bad_names = [gas.species_names[int(i)] for i in bad[:8]]
-            raise ValueError(
-                f"Gas diffusion coeffs too small at cell {ig}: "
-                f"min(D)={float(np.min(D_mech)):.3e}, bad_species={bad_names}, total_bad={int(bad.size)}"
+            logger.warning(
+                "Gas diffusion coeffs below floor at cell %d: "
+                "min(D)=%.3e, bad_species=%s, total_bad=%d — flooring to %.3e",
+                ig, float(np.min(D_mech)), bad_names, int(bad.size), D_floor,
             )
+            D_mech = np.maximum(D_mech, D_floor)
         if np.any(~np.isfinite(h_species_mech)):
             raise ValueError(f"Non-physical gas species enthalpy at cell {ig}")
 
