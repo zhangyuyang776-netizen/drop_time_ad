@@ -691,8 +691,12 @@ def _reconstruct_closure(
         # Clamp slightly exceeding 1.0 values to 1.0
         closure = np.where((closure > 1.0) & (closure <= 1.0 + tol), 1.0, closure)
 
-        # Force strict physical bounds [0, 1] to handle floating-point precision issues
-        closure = np.clip(closure, 0.0, 1.0)
+        # Force strict physical bounds. A small positive lower floor (1e-8) prevents
+        # the closure species (e.g. N2) from being stored as exactly 0 in the state
+        # vector when sum_others slightly exceeds 1.0 due to floating-point rounding.
+        # Storing Y_N2=0 exactly causes mix_diff_coeffs to return 0 for N2 in Cantera,
+        # leading to a catastrophically ill-conditioned Jacobian near the boiling point.
+        closure = np.clip(closure, 1.0e-8, 1.0)
 
         # After clamping, verify no catastrophic errors remain
         if np.any(~np.isfinite(closure)):
